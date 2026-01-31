@@ -29,25 +29,32 @@ export default function HomeScreen({ navigation }: any) {
 
   return (
     <View style={styles.page}>
-      <Text style={styles.h1}>Retro Groceries</Text>
+      <Text style={styles.h1}>Courses</Text>
 
       <Card style={{ gap: tokens.spacing.sm }}>
         <RetroButton
-          title="Go to add ingredients"
+          title="Ajouter un ingredient"
           onPress={() => navigation.navigate("AddIngredient")}
         />
+        
         <RetroButton
-          title="Go to Groceries"
+          title="Gérer les recettes"
+          onPress={() => navigation.navigate("Recipes")}
+        />
+
+        <RetroButton
+          title="Gérer les courses"
           onPress={() => navigation.navigate("Groceries")}
         />
+
         <RetroButton
-          title="Go to Recipes"
-          onPress={() => navigation.navigate("Recipes")}
+          title="Faire les courses"
+          onPress={() => navigation.navigate("Buying")}
         />
 
         {/* AUTH */}
         {!loggedIn ? (
-          <RetroButton title="Login (test)" onPress={loginTest} />
+          <RetroButton title="Login" onPress={loginTest} />
         ) : (
           <RetroButton title="Logout" onPress={logout} />
         )}
