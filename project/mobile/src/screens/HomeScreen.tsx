@@ -59,6 +59,8 @@ export default function HomeScreen({ navigation }: any) {
           <RetroButton title="Logout" onPress={logout} />
         )}
       </Card>
+
+      <Text style={styles.version}>v1.1.0</Text>
     </View>
   );
 }
@@ -84,4 +86,11 @@ const styles = StyleSheet.create({
     color: tokens.colors.text,
     fontFamily: "monospace",
   },
+  version: {
+  position: "absolute",
+  bottom: tokens.spacing.sm,
+  right: tokens.spacing.sm,
+  fontSize: 12,
+  color: tokens.colors.muted,
+}
 });
