@@ -1,16 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  Alert,
-  ScrollView,
-  TouchableOpacity,
-} from "react-native";
+import { View, Text, StyleSheet, Alert, ScrollView } from "react-native";
 
 import { supabase } from "../api/supabase";
 import { tokens } from "../theme/tokens";
-import { Card, RetroButton } from "../theme/components";
+import { Card, RetroButton, RetroRow, RetroCheckbox } from "../theme/components";
 
 type GroceryRow = { id: number; userId: string };
 
@@ -18,14 +11,14 @@ type GroceryRecipeRow = {
   id: number;
   groceryId: number;
   recipeId: number;
-  quantity: number; // multiplier for recipe
+  quantity: number;
 };
 
 type RecipeIngredientRow = {
   id: number;
   recipeId: number;
   ingredientId: number;
-  quantity: number; // quantity for ingredient inside recipe
+  quantity: number;
 };
 
 type IngredientRow = {
@@ -33,7 +26,7 @@ type IngredientRow = {
   name: string;
   unit: string | null;
   zoneId: number | null;
-  zone?: { name: string } | null; // embedded join
+  zone?: { name: string } | null;
 };
 
 type GroceryIngredientRow = {
@@ -49,9 +42,9 @@ type BuyItem = {
   unit: string | null;
   zoneName: string;
   zoneId: number | null;
-  total: number; // computed required quantity
+  total: number;
   checked: boolean;
-  groceryIngredientId?: number; // for update
+  groceryIngredientId?: number;
 };
 
 export default function BuyingScreen() {
@@ -60,7 +53,6 @@ export default function BuyingScreen() {
   const [groceryId, setGroceryId] = useState<number | null>(null);
   const [items, setItems] = useState<BuyItem[]>([]);
 
-  // Group by zone name
   const grouped = useMemo(() => {
     const map = new Map<string, BuyItem[]>();
     for (const it of items) {
@@ -68,7 +60,7 @@ export default function BuyingScreen() {
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(it);
     }
-    // sort items in each zone (unchecked first, then name)
+
     for (const [k, arr] of map.entries()) {
       arr.sort((a, b) => {
         if (a.checked !== b.checked) return a.checked ? 1 : -1;
@@ -76,7 +68,7 @@ export default function BuyingScreen() {
       });
       map.set(k, arr);
     }
-    // sort zones alphabetically, but put "Other" last
+
     const zones = Array.from(map.keys()).sort((a, b) => {
       if (a === "Autres") return 1;
       if (b === "Autres") return -1;
@@ -90,7 +82,10 @@ export default function BuyingScreen() {
   }, [items]);
 
   const getUserId = async (): Promise<string> => {
-    const { data: { user }, error } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
     if (error) throw error;
     const userId = user?.id;
     if (!userId) throw new Error("User not authenticated");
@@ -126,7 +121,6 @@ export default function BuyingScreen() {
       const gid = await getOrCreateGroceryId(userId);
       setGroceryId(gid);
 
-      // 1) GroceryRecipe (recipes in grocery)
       const { data: grData, error: grError } = await supabase
         .from("GroceryRecipe")
         .select("id,groceryId,recipeId,quantity")
@@ -140,7 +134,6 @@ export default function BuyingScreen() {
         return;
       }
 
-      // 2) RecipeIngredient for these recipeIds
       const recipeIds = groceryRecipes.map((r) => r.recipeId);
 
       const { data: riData, error: riError } = await supabase
@@ -151,8 +144,7 @@ export default function BuyingScreen() {
       if (riError) throw riError;
       const recipeIngredients = (riData ?? []) as RecipeIngredientRow[];
 
-      // 3) Compute totals per ingredient
-      const recipeMultiplier = new Map<number, number>(); // recipeId -> qty in grocery
+      const recipeMultiplier = new Map<number, number>();
       for (const r of groceryRecipes) recipeMultiplier.set(r.recipeId, r.quantity);
 
       const totalsByIngredientId = new Map<number, number>();
@@ -173,25 +165,23 @@ export default function BuyingScreen() {
         return;
       }
 
-      // 4) Fetch Ingredient + Zone name (embedded)
       const { data: ingData, error: ingError } = await supabase
         .from("Ingredient")
         .select("id,name,unit,zoneId,zone:Zone(name)")
         .in("id", ingredientIds);
 
       if (ingError) throw ingError;
+
       const mappedIngredients: IngredientRow[] = (ingData ?? []).map((i: any) => ({
         id: i.id,
         name: i.name,
         unit: i.unit ?? null,
         zoneId: i.zoneId ?? null,
-        zone: Array.isArray(i.zone) ? (i.zone[0] ?? null) : (i.zone ?? null), // ✅ objet { name }
+        zone: Array.isArray(i.zone) ? (i.zone[0] ?? null) : (i.zone ?? null),
       }));
 
       const ingredients = mappedIngredients;
 
-
-      // 5) Fetch GroceryIngredient checks for these ingredientIds
       const { data: giData, error: giError } = await supabase
         .from("GroceryIngredient")
         .select("id,ingredientId,check,userId")
@@ -203,7 +193,6 @@ export default function BuyingScreen() {
       const checkByIngredientId = new Map<number, GroceryIngredientRow>();
       for (const c of checks) checkByIngredientId.set(c.ingredientId, c);
 
-      // 6) Build final list
       const built: BuyItem[] = ingredients
         .map((ing) => {
           const total = totalsByIngredientId.get(ing.id) ?? 0;
@@ -220,10 +209,8 @@ export default function BuyingScreen() {
             groceryIngredientId: chk?.id,
           } as BuyItem;
         })
-        // Keep only ingredients we actually need (>0)
         .filter((x) => x.total > 0);
 
-      // Sort globally by zone then name
       built.sort((a, b) => {
         if (a.zoneName !== b.zoneName) return a.zoneName.localeCompare(b.zoneName);
         if (a.checked !== b.checked) return a.checked ? 1 : -1;
@@ -233,7 +220,7 @@ export default function BuyingScreen() {
       setItems(built);
     } catch (e: any) {
       console.log("BUYING LOAD ERROR", e);
-      Alert.alert("Error", e?.message || e?.details || e?.hint || "Load failed");
+      Alert.alert("Error", e?.message || "Load failed");
     } finally {
       setLoading(false);
     }
@@ -244,7 +231,6 @@ export default function BuyingScreen() {
   }, []);
 
   const toggleCheck = async (ingredientId: number) => {
-    // optimistic UI
     setItems((prev) =>
       prev.map((it) =>
         it.ingredientId === ingredientId ? { ...it, checked: !it.checked } : it
@@ -256,7 +242,6 @@ export default function BuyingScreen() {
       const current = items.find((x) => x.ingredientId === ingredientId);
       const nextValue = !(current?.checked ?? false);
 
-      // If we already have a GroceryIngredient row => update
       if (current?.groceryIngredientId) {
         const { error } = await supabase
           .from("GroceryIngredient")
@@ -267,20 +252,13 @@ export default function BuyingScreen() {
         return;
       }
 
-      // Else try upsert by (userId, ingredientId) if you have a unique constraint
-      // If you don't have it, this may error; we catch and fallback.
       const { data: inserted, error: upsertError } = await supabase
         .from("GroceryIngredient")
-        .upsert(
-          { ingredientId, userId, check: nextValue },
-          // requires UNIQUE(userId, ingredientId) to be deterministic
-          { onConflict: "userId,ingredientId" }
-        )
+        .upsert({ ingredientId, userId, check: nextValue }, { onConflict: "userId,ingredientId" })
         .select("id,ingredientId,check")
         .single();
 
       if (!upsertError && inserted?.id) {
-        // update local with the created id
         setItems((prev) =>
           prev.map((it) =>
             it.ingredientId === ingredientId
@@ -291,8 +269,6 @@ export default function BuyingScreen() {
         return;
       }
 
-      // Fallback if onConflict is not available in your schema:
-      // try insert
       const { data: created, error: createError } = await supabase
         .from("GroceryIngredient")
         .insert({ ingredientId, userId, check: nextValue })
@@ -310,9 +286,8 @@ export default function BuyingScreen() {
       );
     } catch (e: any) {
       console.log("TOGGLE CHECK ERROR", e);
-      Alert.alert("Error", e?.message || e?.details || e?.hint || "Update failed");
+      Alert.alert("Error", e?.message || "Update failed");
 
-      // revert optimistic UI on error
       setItems((prev) =>
         prev.map((it) =>
           it.ingredientId === ingredientId ? { ...it, checked: !it.checked } : it
@@ -322,13 +297,16 @@ export default function BuyingScreen() {
   };
 
   const formatQty = (qty: number) => {
-    // You can tweak: integer display vs decimals
     if (Number.isInteger(qty)) return String(qty);
     return qty.toFixed(2);
   };
 
   return (
-    <ScrollView style={styles.page} contentContainerStyle={{ gap: tokens.spacing.lg }}>
+    <ScrollView
+      style={styles.page}
+      contentContainerStyle={{ gap: tokens.spacing.lg, paddingBottom: tokens.spacing.xl * 3 }}
+      keyboardShouldPersistTaps="handled"
+    >
       <View style={styles.headerRow}>
         <Text style={styles.h1}>Courses</Text>
         <RetroButton title={loading ? "..." : "Rafraîchir"} onPress={loadAll} />
@@ -347,28 +325,25 @@ export default function BuyingScreen() {
 
             <View style={{ gap: tokens.spacing.xs }}>
               {section.items.map((it) => (
-                <TouchableOpacity
+                <RetroRow
                   key={String(it.ingredientId)}
-                  activeOpacity={0.8}
+                  selected={it.checked}
                   onPress={() => toggleCheck(it.ingredientId)}
-                  style={[
-                    styles.itemRow,
-                    it.checked ? styles.itemRowChecked : null,
-                  ]}
                 >
                   <View style={styles.itemLeft}>
-                    <Text style={styles.itemName}>
-                      {it.checked ? "✅ " : "⬜ "} {it.name}
-                    </Text>
+                    <View style={styles.itemTitleRow}>
+                      <RetroCheckbox checked={it.checked} />
+                      <Text style={styles.itemName}>{it.name}</Text>
+                    </View>
+
                     <Text style={styles.itemMeta}>
-                      Quantité: {formatQty(it.total)}{it.unit ? ` ${it.unit}` : ""}
+                      Quantité: {formatQty(it.total)}
+                      {it.unit ? ` ${it.unit}` : ""}
                     </Text>
                   </View>
 
-                  <Text style={styles.itemMetaRight}>
-                    {it.checked ? "OK" : ""}
-                  </Text>
-                </TouchableOpacity>
+                  <Text style={styles.itemMetaRight}>{it.checked ? "OK" : ""}</Text>
+                </RetroRow>
               ))}
             </View>
           </Card>
@@ -389,55 +364,52 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
+
   h1: {
     color: tokens.colors.text,
-    fontSize: 24,
-    fontWeight: "900",
-    letterSpacing: 1,
+    fontSize: tokens.typography.h1,
+    fontFamily: tokens.typography.fontFamilyStrong,
+    letterSpacing: tokens.typography.letterSpacing,
   },
+
   muted: {
-    color: tokens.colors.text,
-    opacity: 0.7,
+    color: tokens.colors.muted,
+    fontFamily: tokens.typography.fontFamily,
+    letterSpacing: tokens.typography.letterSpacing,
   },
 
   zoneTitle: {
     color: tokens.colors.text,
-    fontSize: 16,
-    fontWeight: "900",
-    letterSpacing: 0.5,
+    fontSize: tokens.typography.h2,
+    fontFamily: tokens.typography.fontFamilyStrong,
+    letterSpacing: tokens.typography.letterSpacing,
   },
 
-  itemRow: {
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.15)",
+  itemLeft: {
+    flex: 1,
+    gap: 6,
+  },
+  itemTitleRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
     gap: 10,
   },
-  itemRowChecked: {
-    borderColor: "rgba(255,255,255,0.35)",
-    opacity: 0.8,
-  },
-  itemLeft: {
-    flex: 1,
-    gap: 4,
-  },
   itemName: {
     color: tokens.colors.text,
-    fontWeight: "900",
+    fontFamily: tokens.typography.fontFamilyStrong,
+    letterSpacing: tokens.typography.letterSpacing,
+    fontSize: tokens.typography.fontSize,
   },
   itemMeta: {
-    color: tokens.colors.text,
-    opacity: 0.75,
+    color: tokens.colors.muted,
+    fontFamily: tokens.typography.fontFamily,
+    letterSpacing: tokens.typography.letterSpacing,
     fontSize: 12,
   },
   itemMetaRight: {
-    color: tokens.colors.text,
-    opacity: 0.7,
-    fontWeight: "900",
+    color: tokens.colors.muted,
+    fontFamily: tokens.typography.fontFamilyStrong,
+    letterSpacing: tokens.typography.letterSpacing,
+    fontSize: 12,
   },
 });

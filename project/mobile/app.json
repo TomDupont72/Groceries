@@ -15,7 +15,6 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/grocery.png",
         "backgroundColor": "#E6F4FE"
-
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
@@ -25,7 +24,9 @@
       "output": "static",
       "favicon": "./assets/images/favicon.png"
     },
-    "plugins": [],
+    "plugins": [
+      "expo-font"
+    ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true

@@ -3,6 +3,7 @@ import { Text, View, StyleSheet, Alert } from "react-native";
 import { tokens } from "../theme/tokens";
 import { Card, RetroButton } from "../theme/components";
 import { supabase } from "../api/supabase";
+import { Screen } from "../theme/Screen"
 
 export default function HomeScreen({ navigation }: any) {
   const [loggedIn, setLoggedIn] = useState(false);
@@ -28,7 +29,7 @@ export default function HomeScreen({ navigation }: any) {
   };
 
   return (
-    <View style={styles.page}>
+    <Screen>
       <Text style={styles.h1}>Courses</Text>
 
       <Card style={{ gap: tokens.spacing.sm }}>
@@ -61,36 +62,25 @@ export default function HomeScreen({ navigation }: any) {
       </Card>
 
       <Text style={styles.version}>v1.1.0</Text>
-    </View>
+
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  page: {
-    flex: 1,
-    backgroundColor: tokens.colors.bg,
-    padding: tokens.spacing.lg,
-    gap: tokens.spacing.lg,
-  },
   h1: {
     color: tokens.colors.text,
-    fontSize: 28,
-    fontWeight: "900",
-    letterSpacing: 1,
-  },
-  label: {
-    color: tokens.colors.muted,
-    fontWeight: "700",
-  },
-  mono: {
-    color: tokens.colors.text,
-    fontFamily: "monospace",
+    fontSize: tokens.typography.h1,
+    fontFamily: tokens.typography.fontFamilyStrong,
+    letterSpacing: tokens.typography.letterSpacing,
+    marginBottom: tokens.spacing.md,
   },
   version: {
-  position: "absolute",
-  bottom: tokens.spacing.sm,
-  right: tokens.spacing.sm,
-  fontSize: 12,
-  color: tokens.colors.muted,
-}
+    position: "absolute",
+    fontSize: tokens.typography.version,
+    fontFamily: tokens.typography.fontFamily,
+    bottom: tokens.spacing.sm,
+    right: tokens.spacing.sm,
+    color: tokens.colors.muted,
+  },
 });

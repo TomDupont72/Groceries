@@ -1,16 +1,15 @@
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  Alert,
-  ScrollView,
-  TouchableOpacity,
-} from "react-native";
+import { View, Text, StyleSheet, Alert, ScrollView } from "react-native";
 
 import { supabase } from "../api/supabase";
 import { tokens } from "../theme/tokens";
-import { Card, RetroButton, RetroInput } from "../theme/components";
+import {
+  Card,
+  RetroButton,
+  RetroInput,
+  RetroRow,
+  RetroCheckbox,
+} from "../theme/components";
 
 // Recettes disponibles (catalogue)
 type RecipeCatalogRow = {
@@ -24,22 +23,24 @@ type GroceryLineRow = {
   groceryId: number | string;
   recipeId: number | string;
   quantity: number | null;
-  recipe?: { name: string } | null; // join alias
+  recipe?: { name: string } | null;
 };
 
-export default function RecipesScreen() {
+export default function GroceriesScreen() {
   const [loading, setLoading] = useState(false);
 
-  // Grocery unique du user
   const [groceryId, setGroceryId] = useState<number | string | null>(null);
 
-  // Data
   const [recipeCatalog, setRecipeCatalog] = useState<RecipeCatalogRow[]>([]);
   const [groceryLines, setGroceryLines] = useState<GroceryLineRow[]>([]);
 
-  // Sélection + quantités
-  const [selectedRecipeIds, setSelectedRecipeIds] = useState<Array<number | string>>([]);
-  const [quantitiesByRecipeId, setQuantitiesByRecipeId] = useState<Record<string, string>>({});
+  const [selectedRecipeIds, setSelectedRecipeIds] = useState<Array<number | string>>(
+    []
+  );
+
+  const [quantitiesByRecipeId, setQuantitiesByRecipeId] = useState<{
+    [key: string]: string;
+  }>({});
 
   const selectedCount = selectedRecipeIds.length;
 
@@ -74,9 +75,7 @@ export default function RecipesScreen() {
     return `${selectedCount} recettes sélectionnées`;
   }, [selectedCount]);
 
-  // ✅ Récupère ou crée la Grocery unique
   const getOrCreateGroceryId = async (userId: string) => {
-    // 1) Try get existing
     const { data: existing, error: existingError } = await supabase
       .from("Grocery")
       .select("id")
@@ -84,10 +83,8 @@ export default function RecipesScreen() {
       .maybeSingle();
 
     if (existingError) throw existingError;
-
     if (existing?.id != null) return existing.id;
 
-    // 2) Create
     const { data: created, error: createdError } = await supabase
       .from("Grocery")
       .insert({ userId })
@@ -104,17 +101,18 @@ export default function RecipesScreen() {
     try {
       setLoading(true);
 
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
       if (userError) throw userError;
 
       const userId = user?.id;
       if (!userId) throw new Error("User not authenticated");
 
-      // Grocery unique
       const gid = await getOrCreateGroceryId(userId);
       setGroceryId(gid);
 
-      // 1) Load recipes catalog (les recettes à ajouter)
       const { data: recipesData, error: recipesError } = await supabase
         .from("Recipe")
         .select("id,name")
@@ -123,26 +121,25 @@ export default function RecipesScreen() {
       if (recipesError) throw recipesError;
       setRecipeCatalog((recipesData ?? []) as RecipeCatalogRow[]);
 
-      // 2) Load current grocery lines (avec join recipe name)
-      // 👉 alias "recipe:Recipe(name)" suppose que GroceryRecipe.recipeId -> Recipe.id existe
       const { data: linesData, error: linesError } = await supabase
         .from("GroceryRecipe")
         .select("id,groceryId,recipeId,quantity,recipe:Recipe(name)")
         .eq("groceryId", gid);
 
       if (linesError) throw linesError;
-      const mappedLines: GroceryLineRow[] = (linesData ?? []).map((l: any) => ({
-      id: l.id,
-      groceryId: l.groceryId,
-      recipeId: l.recipeId,
-      quantity: l.quantity,
-      recipe: l.recipe ?? null, // objet { name }
-    }));
 
-    setGroceryLines(mappedLines);
+      const mappedLines: GroceryLineRow[] = (linesData ?? []).map((l: any) => ({
+        id: l.id,
+        groceryId: l.groceryId,
+        recipeId: l.recipeId,
+        quantity: l.quantity,
+        recipe: l.recipe ?? null,
+      }));
+
+      setGroceryLines(mappedLines);
     } catch (e: any) {
       console.log("LOAD ERROR", e);
-      Alert.alert("Error", e?.message || e?.details || e?.hint || "Load failed");
+      Alert.alert("Error", e?.message || "Load failed");
     } finally {
       setLoading(false);
     }
@@ -160,7 +157,6 @@ export default function RecipesScreen() {
       return;
     }
 
-    // quantité obligatoire (enlève ce bloc si tu veux quantité optionnelle)
     const hasEmptyQuantity = selectedRecipeIds.some((id) => {
       const q = quantitiesByRecipeId[String(id)] ?? "";
       return q.trim() === "";
@@ -174,17 +170,18 @@ export default function RecipesScreen() {
     try {
       setLoading(true);
 
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
       if (userError) throw userError;
 
       const userId = user?.id;
       if (!userId) throw new Error("User not authenticated");
 
-      // Grocery unique (si jamais pas encore)
       const gid = groceryId ?? (await getOrCreateGroceryId(userId));
       setGroceryId(gid);
 
-      // Insert GroceryRecipe rows
       const rows = selectedRecipeIds.map((recipeId) => {
         const key = String(recipeId);
         const quantityStr = quantitiesByRecipeId[key] ?? "";
@@ -196,7 +193,7 @@ export default function RecipesScreen() {
 
         return {
           groceryId: gid,
-          recipeId: recipeId,
+          recipeId,
           quantity: quantityNumber,
         };
       });
@@ -204,7 +201,6 @@ export default function RecipesScreen() {
       const { error: insertError } = await supabase.from("GroceryRecipe").insert(rows);
       if (insertError) throw insertError;
 
-      // Reset selection
       setSelectedRecipeIds([]);
       setQuantitiesByRecipeId({});
       Alert.alert("Success", "Grocery updated");
@@ -212,7 +208,7 @@ export default function RecipesScreen() {
       await loadAll();
     } catch (e: any) {
       console.log("SUPABASE ERROR", e);
-      Alert.alert("Error", e?.message || e?.details || e?.hint || "Insert failed");
+      Alert.alert("Error", e?.message || "Insert failed");
     } finally {
       setLoading(false);
     }
@@ -221,38 +217,40 @@ export default function RecipesScreen() {
   return (
     <ScrollView
       style={styles.page}
-      contentContainerStyle={{ gap: tokens.spacing.lg }}
+      contentContainerStyle={{ gap: tokens.spacing.lg, paddingBottom: tokens.spacing.xl * 3 }}
+      keyboardShouldPersistTaps="handled"
     >
       <Text style={styles.h1}>Gérer les courses</Text>
 
-      {/* Ajouter à la course */}
       <Card style={{ gap: tokens.spacing.sm }}>
         <Text style={styles.h2}>Ajouter des recettes aux courses</Text>
         <Text style={styles.muted}>{selectedLabel}</Text>
 
         <View style={{ gap: tokens.spacing.xs }}>
           {recipeCatalog.length === 0 ? (
-            <Text style={styles.muted}>Pas encore de recette. Veuillez ajouter une recette d'abord.</Text>
+            <Text style={styles.muted}>
+              Pas encore de recette. Veuillez ajouter une recette d'abord.
+            </Text>
           ) : (
             recipeCatalog.map((rec) => {
               const selected = selectedRecipeIds.includes(rec.id);
               const quantity = quantitiesByRecipeId[String(rec.id)] ?? "";
 
               return (
-                <TouchableOpacity
+                <RetroRow
                   key={String(rec.id)}
+                  selected={selected}
                   onPress={() => toggleRecipe(rec.id)}
-                  activeOpacity={0.8}
-                  style={[styles.ingRow, selected ? styles.ingRowSelected : null]}
                 >
-                  <View style={styles.ingLeft}>
-                    <Text style={styles.ingName}>
-                      {selected ? "✅ " : "⬜ "} {rec.name}
-                    </Text>
+                  <View style={styles.left}>
+                    <View style={styles.titleRow}>
+                      <RetroCheckbox checked={selected} />
+                      <Text style={styles.itemName}>{rec.name}</Text>
+                    </View>
                   </View>
 
                   {selected ? (
-                    <View style={styles.ingRight}>
+                    <View style={styles.right}>
                       <RetroInput
                         value={quantity}
                         onChangeText={(txt) => setQuantityForRecipe(rec.id, txt)}
@@ -260,9 +258,9 @@ export default function RecipesScreen() {
                       />
                     </View>
                   ) : (
-                    <View style={styles.ingRight} />
+                    <View style={styles.right} />
                   )}
-                </TouchableOpacity>
+                </RetroRow>
               );
             })
           )}
@@ -274,7 +272,6 @@ export default function RecipesScreen() {
         />
       </Card>
 
-      {/* Liste de la course */}
       <Card style={{ gap: tokens.spacing.sm }}>
         <View style={styles.rowBetween}>
           <Text style={styles.h2}>Mes courses</Text>
@@ -289,9 +286,7 @@ export default function RecipesScreen() {
               <Text style={styles.recipeName}>
                 {line.recipe?.name ?? `Recette #${String(line.recipeId)}`}
               </Text>
-              <Text style={styles.recipeName}>
-                Quantité: {line.quantity ?? "-"}
-              </Text>
+              <Text style={styles.recipeMeta}>Quantité: {line.quantity ?? "-"}</Text>
             </View>
           ))
         )}
@@ -306,47 +301,26 @@ const styles = StyleSheet.create({
     backgroundColor: tokens.colors.bg,
     padding: tokens.spacing.lg,
   },
+
   h1: {
     color: tokens.colors.text,
-    fontSize: 24,
-    fontWeight: "900",
-    letterSpacing: 1,
+    fontSize: tokens.typography.h1,
+    fontFamily: tokens.typography.fontFamilyStrong,
+    letterSpacing: tokens.typography.letterSpacing,
+    marginBottom: tokens.spacing.md,
   },
   h2: {
     color: tokens.colors.text,
-    fontSize: 16,
-    fontWeight: "900",
-    letterSpacing: 0.5,
-  },
-  muted: {
-    color: tokens.colors.text,
-    opacity: 0.7,
+    fontSize: tokens.typography.h2,
+    fontFamily: tokens.typography.fontFamilyStrong,
+    letterSpacing: tokens.typography.letterSpacing,
+    marginBottom: tokens.spacing.md,
   },
 
-  ingRow: {
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.15)",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 10,
-  },
-  ingRowSelected: {
-    borderColor: "rgba(255,255,255,0.5)",
-  },
-  ingLeft: {
-    flex: 1,
-    gap: 4,
-  },
-  ingRight: {
-    width: 110,
-  },
-  ingName: {
-    color: tokens.colors.text,
-    fontWeight: "800",
+  muted: {
+    color: tokens.colors.muted,
+    fontFamily: tokens.typography.fontFamily,
+    letterSpacing: tokens.typography.letterSpacing,
   },
 
   rowBetween: {
@@ -354,16 +328,44 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
+
+  left: {
+    flex: 1,
+    gap: 6,
+  },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  right: {
+    width: 110,
+  },
+  itemName: {
+    color: tokens.colors.text,
+    fontFamily: tokens.typography.fontFamilyStrong,
+    letterSpacing: tokens.typography.letterSpacing,
+    fontSize: tokens.typography.fontSize,
+  },
+
   recipeRow: {
     paddingVertical: 10,
     paddingHorizontal: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.15)",
-    gap: 4,
+    backgroundColor: tokens.colors.card,
+    borderWidth: tokens.stroke.thin,
+    borderColor: tokens.colors.border,
+    borderRadius: 0,
+    gap: 6,
   },
   recipeName: {
     color: tokens.colors.text,
-    fontWeight: "900",
+    fontFamily: tokens.typography.fontFamilyStrong,
+    letterSpacing: tokens.typography.letterSpacing,
+  },
+  recipeMeta: {
+    color: tokens.colors.muted,
+    fontFamily: tokens.typography.fontFamily,
+    letterSpacing: tokens.typography.letterSpacing,
+    fontSize: 12,
   },
 });

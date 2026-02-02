@@ -1,9 +1,11 @@
-import React, { useEffect, useState } from "react";
-import { View, ScrollView, Text, StyleSheet, Alert, TouchableOpacity } from "react-native";
+import React, { useEffect, useMemo, useState } from "react";
+import { Text, StyleSheet, Alert } from "react-native";
 
 import { supabase } from "../api/supabase";
 import { tokens } from "../theme/tokens";
 import { Card, RetroButton, RetroInput } from "../theme/components";
+import { Screen } from "../theme/Screen"
+import ComboBox from "../components/ComboBox"
 
 type ZoneRow = {
   id: number;
@@ -16,6 +18,15 @@ export default function AddIngredientScreen() {
   const [zoneId, setZoneId] = useState<Number>();
   const [loading, setLoading] = useState(false);
   const [zoneData, setZoneData] = useState<ZoneRow[]>([]);
+  const [zoneName, setZoneName] = useState("");
+
+  const zonesDict = useMemo(() => {
+    const out: { [key: string]: string } = {};
+    for (const z of zoneData) {
+      out[z.name] = String(z.id);
+    }
+    return out;
+  }, [zoneData]);
 
   const submit = async () => {
     if (loading) return;
@@ -42,6 +53,8 @@ export default function AddIngredientScreen() {
       console.log("INSERT OK", data);
 
       setName("");
+      setUnit("");
+      setZoneName("");
       Alert.alert("Succès", "Ingrédient ajouté");
 
     } catch (e: any) {
@@ -89,19 +102,13 @@ export default function AddIngredientScreen() {
     }
   };
 
-  const toggleZone = (id: number) => {
-    setZoneId(id);
-  }
-
   useEffect(() => {
     loadAll();
   }, []);
 
   return (
     
-    <ScrollView style={styles.page}
-    contentContainerStyle={{ gap: tokens.spacing.lg }}
-    >
+    <Screen>
       <Text style={styles.h1}>Ajouter un ingrédient</Text>
 
       <Card style={{ gap: tokens.spacing.sm }}>
@@ -117,41 +124,21 @@ export default function AddIngredientScreen() {
           placeholder="Unité de l'ingrédient"
         />
 
-        <View style = {{ gap: tokens.spacing.xs }}>
-          {zoneData.length === 0 ? (
-            <Text style = {styles.muted}>
-              Pas encore de zone. Veuillez d'abord ajouter des zones.
-            </Text>
-          ) : (
-            zoneData.map((zone) => {
-              const selected = zoneId === zone.id;
-
-              return (
-                <TouchableOpacity
-                  key={zone.id}
-                  activeOpacity={0.8}
-                  onPress={() => toggleZone(zone.id)}
-                  style={[
-                    styles.ingRow,
-                    selected ? styles.ingRowSelected : null,
-                  ]}>
-                    <View style={styles.ingLeft}>
-                      <Text style={styles.ingName}>
-                        {selected ? "✅ " : "⬜ "} {zone.name}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-              );
-            })
-          )}
-        </View>
+        <ComboBox
+          dict={zonesDict}
+          value={zoneName}
+          onChange={setZoneName}
+          onPick={(it) => {setZoneId(Number(it.cat));}}
+          placeholder="Choisir une zone"
+          max={6}
+        />
 
         <RetroButton
           title={loading ? "Chargement..." : "Ajouter"}
           onPress={submit}
         />
       </Card>
-    </ScrollView>
+    </Screen>
   );
 }
 
@@ -163,9 +150,10 @@ const styles = StyleSheet.create({
   },
   h1: {
     color: tokens.colors.text,
-    fontSize: 24,
-    fontWeight: "900",
-    letterSpacing: 1,
+    fontSize: tokens.typography.h1,
+    fontFamily: tokens.typography.fontFamilyStrong,
+    letterSpacing: tokens.typography.letterSpacing,
+    marginBottom: tokens.spacing.md,
   },
   h2: {
     color: tokens.colors.text,

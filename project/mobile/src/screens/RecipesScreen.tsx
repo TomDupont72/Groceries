@@ -5,12 +5,17 @@ import {
   StyleSheet,
   Alert,
   ScrollView,
-  TouchableOpacity,
 } from "react-native";
 
 import { supabase } from "../api/supabase";
 import { tokens } from "../theme/tokens";
-import { Card, RetroButton, RetroInput } from "../theme/components";
+import {
+  Card,
+  RetroButton,
+  RetroInput,
+  RetroRow,
+  RetroCheckbox,
+} from "../theme/components";
 
 type IngredientRow = {
   id: number | string;
@@ -27,21 +32,18 @@ type RecipeRow = {
 
 export default function RecipesScreen() {
   const [loading, setLoading] = useState(false);
-
-  // Add recipe form
   const [recipeName, setRecipeName] = useState("");
 
-  // Data
   const [ingredients, setIngredients] = useState<IngredientRow[]>([]);
   const [recipes, setRecipes] = useState<RecipeRow[]>([]);
 
-  // ✅ Selected ingredients + quantity per ingredient (keeps your naming style)
   const [selectedIngredientIds, setSelectedIngredientIds] = useState<
     Array<number | string>
   >([]);
-  const [quantitiesByIngredientId, setQuantitiesByIngredientId] = useState<
-    Record<string, string>
-  >({});
+
+  const [quantitiesByIngredientId, setQuantitiesByIngredientId] = useState<{
+    [key: string]: string;
+  }>({});
 
   const selectedCount = selectedIngredientIds.length;
 
@@ -52,7 +54,6 @@ export default function RecipesScreen() {
       const isSelected = prev.includes(id);
 
       if (isSelected) {
-        // remove
         setQuantitiesByIngredientId((qPrev) => {
           const copy = { ...qPrev };
           delete copy[key];
@@ -61,7 +62,6 @@ export default function RecipesScreen() {
         return prev.filter((x) => x !== id);
       }
 
-      // add
       setQuantitiesByIngredientId((qPrev) => ({ ...qPrev, [key]: "" }));
       return [...prev, id];
     });
@@ -91,7 +91,6 @@ export default function RecipesScreen() {
       const userId = user?.id;
       if (!userId) throw new Error("Utilisateur non connecté");
 
-      // 1) Load ingredients
       const { data: ingData, error: ingError } = await supabase
         .from("Ingredient")
         .select("id,name,unit,zoneId")
@@ -99,7 +98,6 @@ export default function RecipesScreen() {
 
       if (ingError) throw ingError;
 
-      // 2) Load recipes
       const { data: recData, error: recError } = await supabase
         .from("Recipe")
         .select("id,name,createdAt")
@@ -111,7 +109,7 @@ export default function RecipesScreen() {
       setRecipes((recData ?? []) as RecipeRow[]);
     } catch (e: any) {
       console.log("LOAD ERROR", e);
-      Alert.alert("Erreur", e?.message || e?.details || e?.hint || "Le chargement a échoué");
+      Alert.alert("Erreur", e?.message || "Le chargement a échoué");
     } finally {
       setLoading(false);
     }
@@ -134,7 +132,6 @@ export default function RecipesScreen() {
       return;
     }
 
-    // Optional: ensure quantities are filled (you can remove this if you want quantity optional)
     const hasEmptyQuantity = selectedIngredientIds.some((id) => {
       const key = String(id);
       const q = quantitiesByIngredientId[key] ?? "";
@@ -142,7 +139,10 @@ export default function RecipesScreen() {
     });
 
     if (hasEmptyQuantity) {
-      Alert.alert("Erreur", "Veuillez remplir la quantité de tous les ingrédients");
+      Alert.alert(
+        "Erreur",
+        "Veuillez remplir la quantité de tous les ingrédients"
+      );
       return;
     }
 
@@ -158,12 +158,9 @@ export default function RecipesScreen() {
       const userId = user?.id;
       if (!userId) throw new Error("Utilisateur non connecté");
 
-      // 1) Create recipe
       const { data: recipeInserted, error: recipeError } = await supabase
         .from("Recipe")
-        .insert({
-          name: recipeName.trim(),
-        })
+        .insert({ name: recipeName.trim() })
         .select("id")
         .single();
 
@@ -172,28 +169,29 @@ export default function RecipesScreen() {
       const recipeId = recipeInserted?.id;
       if (!recipeId) throw new Error("Recipe insert returned no id");
 
-      // 2) Insert recipe-ingredient relations (✅ quantity per ingredient)
       const rows = selectedIngredientIds.map((ingredientId) => {
         const key = String(ingredientId);
         const quantityStr = quantitiesByIngredientId[key] ?? "";
-        const quantityNumber = quantityStr.trim() === "" ? null : Number(quantityStr);
+        const quantityNumber =
+          quantityStr.trim() === "" ? null : Number(quantityStr);
 
-        // If you want to prevent NaN inserts:
         if (quantityNumber !== null && Number.isNaN(quantityNumber)) {
           throw new Error(`Invalid quantity for ingredientId=${key}`);
         }
 
         return {
-          ingredientId: ingredientId,
-          recipeId: recipeId,
-          quantity: quantityNumber, // assumes column "quantity" exists (numeric) in RecipeIngredient
+          ingredientId,
+          recipeId,
+          quantity: quantityNumber,
         };
       });
 
-      const { error: linkError } = await supabase.from("RecipeIngredient").insert(rows);
+      const { error: linkError } = await supabase
+        .from("RecipeIngredient")
+        .insert(rows);
+
       if (linkError) throw linkError;
 
-      // Reset form + refresh lists
       setRecipeName("");
       setSelectedIngredientIds([]);
       setQuantitiesByIngredientId({});
@@ -202,7 +200,7 @@ export default function RecipesScreen() {
       await loadAll();
     } catch (e: any) {
       console.log("SUPABASE ERROR", e);
-      Alert.alert("Erreur", e?.message || e?.details || e?.hint || "L'ajout a échoué");
+      Alert.alert("Erreur", e?.message || "L'ajout a échoué");
     } finally {
       setLoading(false);
     }
@@ -211,11 +209,11 @@ export default function RecipesScreen() {
   return (
     <ScrollView
       style={styles.page}
-      contentContainerStyle={{ gap: tokens.spacing.lg }}
+      contentContainerStyle={{ gap: tokens.spacing.lg, paddingBottom: tokens.spacing.xl * 3 }}
+      keyboardShouldPersistTaps="handled"
     >
       <Text style={styles.h1}>Gérer les recettes</Text>
 
-      {/* Create recipe */}
       <Card style={{ gap: tokens.spacing.sm }}>
         <Text style={styles.h2}>Créer une recette</Text>
 
@@ -235,22 +233,20 @@ export default function RecipesScreen() {
           ) : (
             ingredients.map((ing) => {
               const selected = selectedIngredientIds.includes(ing.id);
-              const quantity = quantitiesByIngredientId[String(ing.id)] ?? "";
+              const quantity =
+                quantitiesByIngredientId[String(ing.id)] ?? "";
 
               return (
-                <TouchableOpacity
+                <RetroRow
                   key={String(ing.id)}
+                  selected={selected}
                   onPress={() => toggleIngredient(ing.id)}
-                  activeOpacity={0.8}
-                  style={[
-                    styles.ingRow,
-                    selected ? styles.ingRowSelected : null,
-                  ]}
                 >
                   <View style={styles.ingLeft}>
-                    <Text style={styles.ingName}>
-                      {selected ? "✅ " : "⬜ "} {ing.name}
-                    </Text>
+                    <View style={styles.ingTitleRow}>
+                      <RetroCheckbox checked={selected} />
+                      <Text style={styles.ingName}>{ing.name}</Text>
+                    </View>
                     {!!ing.unit && (
                       <Text style={styles.ingMeta}>{ing.unit}</Text>
                     )}
@@ -260,14 +256,16 @@ export default function RecipesScreen() {
                     <View style={styles.ingRight}>
                       <RetroInput
                         value={quantity}
-                        onChangeText={(txt) => setQuantityForIngredient(ing.id, txt)}
+                        onChangeText={(txt) =>
+                          setQuantityForIngredient(ing.id, txt)
+                        }
                         placeholder="Qty"
                       />
                     </View>
                   ) : (
                     <View style={styles.ingRight} />
                   )}
-                </TouchableOpacity>
+                </RetroRow>
               );
             })
           )}
@@ -279,11 +277,13 @@ export default function RecipesScreen() {
         />
       </Card>
 
-      {/* List recipes */}
       <Card style={{ gap: tokens.spacing.sm }}>
         <View style={styles.rowBetween}>
           <Text style={styles.h2}>Mes recettes</Text>
-          <RetroButton title={loading ? "..." : "Rafraîchir"} onPress={loadAll} />
+          <RetroButton
+            title={loading ? "..." : "Rafraîchir"}
+            onPress={loadAll}
+          />
         </View>
 
         {recipes.length === 0 ? (
@@ -306,57 +306,26 @@ const styles = StyleSheet.create({
     backgroundColor: tokens.colors.bg,
     padding: tokens.spacing.lg,
   },
+
   h1: {
     color: tokens.colors.text,
-    fontSize: 24,
-    fontWeight: "900",
-    letterSpacing: 1,
+    fontSize: tokens.typography.h1,
+    fontFamily: tokens.typography.fontFamilyStrong,
+    letterSpacing: tokens.typography.letterSpacing,
+    marginBottom: tokens.spacing.md,
   },
   h2: {
     color: tokens.colors.text,
-    fontSize: 16,
-    fontWeight: "900",
-    letterSpacing: 0.5,
-  },
-  muted: {
-    color: tokens.colors.text,
-    opacity: 0.7,
-  },
-  mutedSmall: {
-    color: tokens.colors.text,
-    opacity: 0.6,
-    fontSize: 12,
+    fontSize: tokens.typography.h2,
+    fontFamily: tokens.typography.fontFamilyStrong,
+    letterSpacing: tokens.typography.letterSpacing,
+    marginBottom: tokens.spacing.md,
   },
 
-  ingRow: {
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.15)",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 10,
-  },
-  ingRowSelected: {
-    borderColor: "rgba(255,255,255,0.5)",
-  },
-  ingLeft: {
-    flex: 1,
-    gap: 4,
-  },
-  ingRight: {
-    width: 110,
-  },
-  ingName: {
-    color: tokens.colors.text,
-    fontWeight: "800",
-  },
-  ingMeta: {
-    color: tokens.colors.text,
-    opacity: 0.7,
-    fontSize: 12,
+  muted: {
+    color: tokens.colors.muted,
+    fontFamily: tokens.typography.fontFamily,
+    letterSpacing: tokens.typography.letterSpacing,
   },
 
   rowBetween: {
@@ -364,16 +333,43 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
+
+  ingLeft: {
+    flex: 1,
+    gap: 6,
+  },
+  ingTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  ingRight: {
+    width: 110,
+  },
+  ingName: {
+    color: tokens.colors.text,
+    fontFamily: tokens.typography.fontFamily,
+    letterSpacing: tokens.typography.letterSpacing,
+    fontSize: tokens.typography.fontSize,
+  },
+  ingMeta: {
+    color: tokens.colors.muted,
+    fontFamily: tokens.typography.fontFamily,
+    letterSpacing: tokens.typography.letterSpacing,
+    fontSize: 12,
+  },
+
   recipeRow: {
     paddingVertical: 10,
     paddingHorizontal: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.15)",
-    gap: 4,
+    backgroundColor: tokens.colors.card,
+    borderWidth: tokens.stroke.thin,
+    borderColor: tokens.colors.border,
+    borderRadius: 0,
   },
   recipeName: {
     color: tokens.colors.text,
-    fontWeight: "900",
+    fontFamily: tokens.typography.fontFamily,
+    letterSpacing: tokens.typography.letterSpacing,
   },
 });

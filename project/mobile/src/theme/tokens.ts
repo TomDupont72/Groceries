@@ -1,16 +1,17 @@
 export const tokens = {
   colors: {
-    bg: "#0b0b0b",
-    card: "#111111",
-    text: "#f2f2f2",
-    muted: "#bdbdbd",
-    border: "#f2f2f2",
+    bg: "#0e0e10",     
+    card: "#0b0b0c",   
+    text: "#f5f5f5",   
+    muted: "#bcbcbc",  
+    border: "#ffffff", 
     accent: "#ffffff",
+    hover: "#101014",  
   },
   radius: {
-    sm: 10,
-    md: 14,
-    lg: 18,
+    sm: 0,           
+    md: 0,
+    lg: 0,
   },
   spacing: {
     xs: 8,
@@ -20,10 +21,22 @@ export const tokens = {
     xl: 28,
   },
   stroke: {
-    thin: 2,
-    thick: 3,
+    thin: 2,          
+    thick: 4,          
   },
   shadow: {
-    offset: 6,
+    offset: 8,         
+  },
+  motion: {
+    dur: 180,
+  },
+  typography: {
+    fontFamily: "DMMono_400Regular",
+    fontFamilyStrong: "DMMono_500Medium",
+    letterSpacing: 0.2,
+    fontSize: 14,
+    h1: 24,
+    h2: 20,
+    version: 12,
   },
 };
