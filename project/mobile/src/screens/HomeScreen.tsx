@@ -61,7 +61,7 @@ export default function HomeScreen({ navigation }: any) {
         )}
       </Card>
 
-      <Text style={styles.version}>v1.1.0</Text>
+      <Text style={styles.version}>v1.2.0</Text>
 
     </Screen>
   );
