@@ -42,21 +42,17 @@ export default function ComboBox({
 
   const items = useMemo<ComboItem[]>(
     () => Object.entries(dict).map(([name, cat]) => ({ name, cat })),
-    [dict]
+    [dict],
   );
 
   const filtered = useMemo(() => {
     const q = (value || "").toLowerCase().trim();
     if (!q) return items.slice(0, max);
 
-    const starts = items
-      .filter((it) => it.name.toLowerCase().startsWith(q))
-      .slice(0, max);
+    const starts = items.filter((it) => it.name.toLowerCase().startsWith(q)).slice(0, max);
     if (starts.length) return starts;
 
-    return items
-      .filter((it) => it.name.toLowerCase().includes(q))
-      .slice(0, max);
+    return items.filter((it) => it.name.toLowerCase().includes(q)).slice(0, max);
   }, [items, value, max]);
 
   function select(it: ComboItem) {

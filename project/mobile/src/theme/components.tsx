@@ -10,13 +10,7 @@ import {
 } from "react-native";
 import { tokens } from "./tokens";
 
-export function Card({
-  children,
-  style,
-}: {
-  children: React.ReactNode;
-  style?: ViewStyle;
-}) {
+export function Card({ children, style }: { children: React.ReactNode; style?: ViewStyle }) {
   return <View style={[styles.card, style]}>{children}</View>;
 }
 
@@ -78,7 +72,6 @@ export function RetroInput({
     </View>
   );
 }
-
 
 const styles = StyleSheet.create({
   hardShadowWrap: {

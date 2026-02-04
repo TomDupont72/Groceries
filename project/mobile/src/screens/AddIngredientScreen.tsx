@@ -4,8 +4,8 @@ import { Text, StyleSheet, Alert } from "react-native";
 import { supabase } from "../api/supabase";
 import { tokens } from "../theme/tokens";
 import { Card, RetroButton, RetroInput } from "../theme/components";
-import { Screen } from "../theme/Screen"
-import ComboBox from "../components/ComboBox"
+import { Screen } from "../theme/Screen";
+import ComboBox from "../components/ComboBox";
 
 type ZoneRow = {
   id: number;
@@ -15,7 +15,7 @@ type ZoneRow = {
 export default function AddIngredientScreen() {
   const [name, setName] = useState("");
   const [unit, setUnit] = useState("");
-  const [zoneId, setZoneId] = useState<Number>();
+  const [zoneId, setZoneId] = useState<number>();
   const [loading, setLoading] = useState(false);
   const [zoneData, setZoneData] = useState<ZoneRow[]>([]);
   const [zoneName, setZoneName] = useState("");
@@ -56,18 +56,10 @@ export default function AddIngredientScreen() {
       setUnit("");
       setZoneName("");
       Alert.alert("Succès", "Ingrédient ajouté");
-
     } catch (e: any) {
       console.log("SUPABASE ERROR", e);
 
-      Alert.alert(
-        "Error",
-        e?.message ||
-        e?.details ||
-        e?.hint ||
-        "L'ajout a échoué"
-      );
-
+      Alert.alert("Error", e?.message || e?.details || e?.hint || "L'ajout a échoué");
     } finally {
       setLoading(false);
     }
@@ -90,9 +82,9 @@ export default function AddIngredientScreen() {
         .from("Zone")
         .select("id, name")
         .order("name", { ascending: true });
-      
+
       if (zoneError) throw zoneError;
-      
+
       setZoneData(zoneData);
     } catch (e: any) {
       console.log("LOAD ERROR", e);
@@ -107,36 +99,26 @@ export default function AddIngredientScreen() {
   }, []);
 
   return (
-    
-    <Screen style={{ paddingTop: tokens.spacing.xl * 2, gap: tokens.spacing.lg}}>
+    <Screen style={{ paddingTop: tokens.spacing.xl * 2, gap: tokens.spacing.lg }}>
       <Text style={styles.h1}>Ajouter un ingrédient</Text>
 
-      <Card style={{ gap: tokens.spacing.sm,  }}>
-        <RetroInput
-          value={name}
-          onChangeText={setName}
-          placeholder="Nom de l'ingrédient"
-        />
+      <Card style={{ gap: tokens.spacing.sm }}>
+        <RetroInput value={name} onChangeText={setName} placeholder="Nom de l'ingrédient" />
 
-        <RetroInput
-          value={unit}
-          onChangeText={setUnit}
-          placeholder="Unité de l'ingrédient"
-        />
+        <RetroInput value={unit} onChangeText={setUnit} placeholder="Unité de l'ingrédient" />
 
         <ComboBox
           dict={zonesDict}
           value={zoneName}
           onChange={setZoneName}
-          onPick={(it) => {setZoneId(Number(it.cat));}}
+          onPick={(it) => {
+            setZoneId(Number(it.cat));
+          }}
           placeholder="Choisir une zone"
           max={6}
         />
 
-        <RetroButton
-          title={loading ? "Chargement..." : "Ajouter"}
-          onPress={submit}
-        />
+        <RetroButton title={loading ? "Chargement..." : "Ajouter"} onPress={submit} />
       </Card>
     </Screen>
   );

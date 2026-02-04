@@ -1,15 +1,15 @@
 export const tokens = {
   colors: {
-    bg: "#0e0e10",     
-    card: "#0b0b0c",   
-    text: "#f5f5f5",   
-    muted: "#bcbcbc",  
-    border: "#ffffff", 
+    bg: "#0e0e10",
+    card: "#0b0b0c",
+    text: "#f5f5f5",
+    muted: "#bcbcbc",
+    border: "#ffffff",
     accent: "#ffffff",
-    hover: "#101014",  
+    hover: "#101014",
   },
   radius: {
-    sm: 0,           
+    sm: 0,
     md: 0,
     lg: 0,
   },
@@ -21,11 +21,11 @@ export const tokens = {
     xl: 28,
   },
   stroke: {
-    thin: 2,          
-    thick: 4,          
+    thin: 2,
+    thick: 4,
   },
   shadow: {
-    offset: 8,         
+    offset: 8,
   },
   motion: {
     dur: 180,

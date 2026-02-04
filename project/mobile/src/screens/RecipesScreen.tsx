@@ -1,21 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  Alert,
-  ScrollView,
-} from "react-native";
+import { View, Text, StyleSheet, Alert, ScrollView } from "react-native";
 
 import { supabase } from "../api/supabase";
 import { tokens } from "../theme/tokens";
-import {
-  Card,
-  RetroButton,
-  RetroInput,
-  RetroRow,
-  RetroCheckbox,
-} from "../theme/components";
+import { Card, RetroButton, RetroInput, RetroRow, RetroCheckbox } from "../theme/components";
 import { Screen } from "../theme/Screen";
 
 type IngredientRow = {
@@ -38,9 +26,7 @@ export default function RecipesScreen() {
   const [ingredients, setIngredients] = useState<IngredientRow[]>([]);
   const [recipes, setRecipes] = useState<RecipeRow[]>([]);
 
-  const [selectedIngredientIds, setSelectedIngredientIds] = useState<
-    Array<number | string>
-  >([]);
+  const [selectedIngredientIds, setSelectedIngredientIds] = useState<(number | string)[]>([]);
 
   const [quantitiesByIngredientId, setQuantitiesByIngredientId] = useState<{
     [key: string]: string;
@@ -140,10 +126,7 @@ export default function RecipesScreen() {
     });
 
     if (hasEmptyQuantity) {
-      Alert.alert(
-        "Erreur",
-        "Veuillez remplir la quantité de tous les ingrédients"
-      );
+      Alert.alert("Erreur", "Veuillez remplir la quantité de tous les ingrédients");
       return;
     }
 
@@ -173,8 +156,7 @@ export default function RecipesScreen() {
       const rows = selectedIngredientIds.map((ingredientId) => {
         const key = String(ingredientId);
         const quantityStr = quantitiesByIngredientId[key] ?? "";
-        const quantityNumber =
-          quantityStr.trim() === "" ? null : Number(quantityStr);
+        const quantityNumber = quantityStr.trim() === "" ? null : Number(quantityStr);
 
         if (quantityNumber !== null && Number.isNaN(quantityNumber)) {
           throw new Error(`Invalid quantity for ingredientId=${key}`);
@@ -187,9 +169,7 @@ export default function RecipesScreen() {
         };
       });
 
-      const { error: linkError } = await supabase
-        .from("RecipeIngredient")
-        .insert(rows);
+      const { error: linkError } = await supabase.from("RecipeIngredient").insert(rows);
 
       if (linkError) throw linkError;
 
@@ -208,97 +188,86 @@ export default function RecipesScreen() {
   };
 
   return (
-    <Screen style={{ paddingTop: tokens.spacing.xl}}>
-    <ScrollView
-      style={styles.page}
-      contentContainerStyle={{ gap: tokens.spacing.lg, paddingBottom: tokens.spacing.xl * 3 }}
-      keyboardShouldPersistTaps="handled"
-    >
-      <Text style={styles.h1}>Gérer les recettes</Text>
+    <Screen style={{ paddingTop: tokens.spacing.xl }}>
+      <ScrollView
+        style={styles.page}
+        contentContainerStyle={{ gap: tokens.spacing.lg, paddingBottom: tokens.spacing.xl * 3 }}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Text style={styles.h1}>Gérer les recettes</Text>
 
-      <Card style={{ gap: tokens.spacing.sm }}>
-        <Text style={styles.h2}>Créer une recette</Text>
+        <Card style={{ gap: tokens.spacing.sm }}>
+          <Text style={styles.h2}>Créer une recette</Text>
 
-        <RetroInput
-          value={recipeName}
-          onChangeText={setRecipeName}
-          placeholder="Nom de la recette"
-        />
-
-        <Text style={styles.muted}>{selectedLabel}</Text>
-
-        <View style={{ gap: tokens.spacing.xs }}>
-          {ingredients.length === 0 ? (
-            <Text style={styles.muted}>
-              Pas encore d'ingrédient. Veuillez d'abord ajouter un ingrédient.
-            </Text>
-          ) : (
-            ingredients.map((ing) => {
-              const selected = selectedIngredientIds.includes(ing.id);
-              const quantity =
-                quantitiesByIngredientId[String(ing.id)] ?? "";
-
-              return (
-                <RetroRow
-                  key={String(ing.id)}
-                  selected={selected}
-                  onPress={() => toggleIngredient(ing.id)}
-                >
-                  <View style={styles.ingLeft}>
-                    <View style={styles.ingTitleRow}>
-                      <RetroCheckbox checked={selected} />
-                      <Text style={styles.ingName}>{ing.name}</Text>
-                    </View>
-                    {!!ing.unit && (
-                      <Text style={styles.ingMeta}>{ing.unit}</Text>
-                    )}
-                  </View>
-
-                  {selected ? (
-                    <View style={styles.ingRight}>
-                      <RetroInput
-                        value={quantity}
-                        onChangeText={(txt) =>
-                          setQuantityForIngredient(ing.id, txt)
-                        }
-                        placeholder="Qty"
-                      />
-                    </View>
-                  ) : (
-                    <View style={styles.ingRight} />
-                  )}
-                </RetroRow>
-              );
-            })
-          )}
-        </View>
-
-        <RetroButton
-          title={loading ? "Chargement..." : "Ajouter une recette"}
-          onPress={submit}
-        />
-      </Card>
-
-      <Card style={{ gap: tokens.spacing.sm }}>
-        <View style={styles.rowBetween}>
-          <Text style={styles.h2}>Mes recettes</Text>
-          <RetroButton
-            title={loading ? "..." : "Rafraîchir"}
-            onPress={loadAll}
+          <RetroInput
+            value={recipeName}
+            onChangeText={setRecipeName}
+            placeholder="Nom de la recette"
           />
-        </View>
 
-        {recipes.length === 0 ? (
-          <Text style={styles.muted}>Pas encore de recettes.</Text>
-        ) : (
-          recipes.map((r) => (
-            <View key={String(r.id)} style={styles.recipeRow}>
-              <Text style={styles.recipeName}>{r.name}</Text>
-            </View>
-          ))
-        )}
-      </Card>
-    </ScrollView>
+          <Text style={styles.muted}>{selectedLabel}</Text>
+
+          <View style={{ gap: tokens.spacing.xs }}>
+            {ingredients.length === 0 ? (
+              <Text style={styles.muted}>
+                Pas encore d&apos;ingrédient. Veuillez d&apos;abord ajouter un ingrédient.
+              </Text>
+            ) : (
+              ingredients.map((ing) => {
+                const selected = selectedIngredientIds.includes(ing.id);
+                const quantity = quantitiesByIngredientId[String(ing.id)] ?? "";
+
+                return (
+                  <RetroRow
+                    key={String(ing.id)}
+                    selected={selected}
+                    onPress={() => toggleIngredient(ing.id)}
+                  >
+                    <View style={styles.ingLeft}>
+                      <View style={styles.ingTitleRow}>
+                        <RetroCheckbox checked={selected} />
+                        <Text style={styles.ingName}>{ing.name}</Text>
+                      </View>
+                      {!!ing.unit && <Text style={styles.ingMeta}>{ing.unit}</Text>}
+                    </View>
+
+                    {selected ? (
+                      <View style={styles.ingRight}>
+                        <RetroInput
+                          value={quantity}
+                          onChangeText={(txt) => setQuantityForIngredient(ing.id, txt)}
+                          placeholder="Qty"
+                        />
+                      </View>
+                    ) : (
+                      <View style={styles.ingRight} />
+                    )}
+                  </RetroRow>
+                );
+              })
+            )}
+          </View>
+
+          <RetroButton title={loading ? "Chargement..." : "Ajouter une recette"} onPress={submit} />
+        </Card>
+
+        <Card style={{ gap: tokens.spacing.sm }}>
+          <View style={styles.rowBetween}>
+            <Text style={styles.h2}>Mes recettes</Text>
+            <RetroButton title={loading ? "..." : "Rafraîchir"} onPress={loadAll} />
+          </View>
+
+          {recipes.length === 0 ? (
+            <Text style={styles.muted}>Pas encore de recettes.</Text>
+          ) : (
+            recipes.map((r) => (
+              <View key={String(r.id)} style={styles.recipeRow}>
+                <Text style={styles.recipeName}>{r.name}</Text>
+              </View>
+            ))
+          )}
+        </Card>
+      </ScrollView>
     </Screen>
   );
 }

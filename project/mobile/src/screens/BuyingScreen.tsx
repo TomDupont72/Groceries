@@ -1,11 +1,9 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { View, Text, StyleSheet, Alert, ScrollView } from "react-native";
 
 import { supabase } from "../api/supabase";
 import { tokens } from "../theme/tokens";
 import { Card, RetroButton, RetroRow, RetroCheckbox } from "../theme/components";
-
-type GroceryRow = { id: number; userId: string };
 
 type GroceryRecipeRow = {
   id: number;
@@ -50,7 +48,6 @@ type BuyItem = {
 export default function BuyingScreen() {
   const [loading, setLoading] = useState(false);
 
-  const [groceryId, setGroceryId] = useState<number | null>(null);
   const [items, setItems] = useState<BuyItem[]>([]);
 
   const grouped = useMemo(() => {
@@ -113,13 +110,12 @@ export default function BuyingScreen() {
     return created.id;
   };
 
-  const loadAll = async () => {
+  const loadAll = useCallback(async () => {
     try {
       setLoading(true);
 
       const userId = await getUserId();
       const gid = await getOrCreateGroceryId(userId);
-      setGroceryId(gid);
 
       const { data: grData, error: grError } = await supabase
         .from("GroceryRecipe")
@@ -155,7 +151,7 @@ export default function BuyingScreen() {
 
         totalsByIngredientId.set(
           ri.ingredientId,
-          (totalsByIngredientId.get(ri.ingredientId) ?? 0) + add
+          (totalsByIngredientId.get(ri.ingredientId) ?? 0) + add,
         );
       }
 
@@ -224,17 +220,15 @@ export default function BuyingScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadAll();
-  }, []);
+  }, [loadAll]);
 
   const toggleCheck = async (ingredientId: number) => {
     setItems((prev) =>
-      prev.map((it) =>
-        it.ingredientId === ingredientId ? { ...it, checked: !it.checked } : it
-      )
+      prev.map((it) => (it.ingredientId === ingredientId ? { ...it, checked: !it.checked } : it)),
     );
 
     try {
@@ -261,10 +255,8 @@ export default function BuyingScreen() {
       if (!upsertError && inserted?.id) {
         setItems((prev) =>
           prev.map((it) =>
-            it.ingredientId === ingredientId
-              ? { ...it, groceryIngredientId: inserted.id }
-              : it
-          )
+            it.ingredientId === ingredientId ? { ...it, groceryIngredientId: inserted.id } : it,
+          ),
         );
         return;
       }
@@ -279,19 +271,15 @@ export default function BuyingScreen() {
 
       setItems((prev) =>
         prev.map((it) =>
-          it.ingredientId === ingredientId
-            ? { ...it, groceryIngredientId: created?.id }
-            : it
-        )
+          it.ingredientId === ingredientId ? { ...it, groceryIngredientId: created?.id } : it,
+        ),
       );
     } catch (e: any) {
       console.log("TOGGLE CHECK ERROR", e);
       Alert.alert("Error", e?.message || "Update failed");
 
       setItems((prev) =>
-        prev.map((it) =>
-          it.ingredientId === ingredientId ? { ...it, checked: !it.checked } : it
-        )
+        prev.map((it) => (it.ingredientId === ingredientId ? { ...it, checked: !it.checked } : it)),
       );
     }
   };
@@ -304,7 +292,11 @@ export default function BuyingScreen() {
   return (
     <ScrollView
       style={styles.page}
-      contentContainerStyle={{ gap: tokens.spacing.lg, paddingBottom: tokens.spacing.xl * 3, paddingTop: tokens.spacing.xl }}
+      contentContainerStyle={{
+        gap: tokens.spacing.lg,
+        paddingBottom: tokens.spacing.xl * 3,
+        paddingTop: tokens.spacing.xl,
+      }}
       keyboardShouldPersistTaps="handled"
     >
       <View style={styles.headerRow}>
@@ -315,7 +307,7 @@ export default function BuyingScreen() {
       {items.length === 0 ? (
         <Card>
           <Text style={styles.muted}>
-            Rien à acheter. Ajouter des recettes à vos courses d'abord.
+            Rien à acheter. Ajouter des recettes à vos courses d&apos;abord.
           </Text>
         </Card>
       ) : (

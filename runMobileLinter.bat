@@ -1,6 +1,6 @@
 @echo off
-cd C:\Users\FlowUP\Desktop\Finance\Trading\project\frontend
-npx eslint src/
+cd C:\Users\FlowUP\Desktop\Finance\Groceries\project\mobile
+npm run lint
 pause
-npx prettier --write src/
+npm run format
 pause

@@ -9,18 +9,12 @@ import * as Linking from "expo-linking";
 type AuthState = "loggedOut" | "logIn" | "signUp" | "loggedIn";
 
 export default function HomeScreen({ navigation }: any) {
-  const [loggedIn, setLoggedIn] = useState(false); // tu peux l'enlever plus tard
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [authState, setAuthState] = useState<AuthState>("loggedOut");
-
   const [username, setUsername] = useState("");
-
-  // version locale (celle de TON APK)
-  const [version, setVersion] = useState("1.3.0");
-
-  // config distante
+  const version = "1.3.0";
   const [appVersion, setAppVersion] = useState("");
   const [appLink, setAppLink] = useState("");
 
@@ -37,7 +31,6 @@ export default function HomeScreen({ navigation }: any) {
       setAppLink(rows.find((row) => row.name === "link")?.value ?? "");
     } catch (e: any) {
       console.log("APP CONFIG ERROR", e);
-      // pas bloquant, on n'alerte pas forcément
     }
   };
 
@@ -74,7 +67,6 @@ export default function HomeScreen({ navigation }: any) {
         return;
       }
 
-      setLoggedIn(true);
       setEmail("");
       setPassword("");
       setAuthState("loggedIn");
@@ -93,7 +85,7 @@ export default function HomeScreen({ navigation }: any) {
         return;
       }
 
-      console.log(email)
+      console.log(email);
 
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
@@ -112,25 +104,21 @@ export default function HomeScreen({ navigation }: any) {
 
       if (profileError) throw profileError;
 
-      // reset form
       setPassword("");
       setPasswordConfirm("");
       setEmail("");
 
-      // ⚠️ selon ta config Supabase, l'utilisateur peut devoir confirmer son email.
-      // si session dispo => loggedIn, sinon on renvoie vers login.
       const {
         data: { session },
       } = await supabase.auth.getSession();
 
       if (session) {
-        setLoggedIn(true);
         setAuthState("loggedIn");
         await loadUsername();
       } else {
         Alert.alert(
           "Inscription réussie",
-          "Vérifie tes emails si une confirmation est requise, puis connecte-toi."
+          "Vérifie tes emails si une confirmation est requise, puis connecte-toi.",
         );
         setAuthState("logIn");
       }
@@ -142,7 +130,6 @@ export default function HomeScreen({ navigation }: any) {
 
   const logout = async () => {
     await supabase.auth.signOut();
-    setLoggedIn(false);
     setUsername("");
     setAuthState("loggedOut");
   };
@@ -152,18 +139,16 @@ export default function HomeScreen({ navigation }: any) {
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        setLoggedIn(true);
         setAuthState("loggedIn");
         loadUsername().catch((e) => console.log("LOAD USERNAME ERROR", e));
       } else {
-        setLoggedIn(false);
         setAuthState("loggedOut");
       }
     });
   }, []);
 
   return (
-    <Screen style={{ paddingTop: tokens.spacing.xl * 2}}>
+    <Screen style={{ paddingTop: tokens.spacing.xl * 2 }}>
       {authState === "loggedIn" && (
         <View style={{ flex: 1 }}>
           <View>
@@ -195,11 +180,8 @@ export default function HomeScreen({ navigation }: any) {
 
             {appVersion !== "" && appVersion !== version && (
               <Text style={[styles.h2, styles.centered]}>
-                Vous êtes sur une ancienne version, {" "}
-                <Text
-                  style={styles.link}
-                  onPress={() => appLink && Linking.openURL(appLink)}
-                >
+                Vous êtes sur une ancienne version,{" "}
+                <Text style={styles.link} onPress={() => appLink && Linking.openURL(appLink)}>
                   cliquez ici
                 </Text>{" "}
                 pour mettre à jour.
@@ -241,7 +223,7 @@ export default function HomeScreen({ navigation }: any) {
           <Text style={[styles.h2, styles.centered]}>
             Pas de compte ?{" "}
             <Text style={styles.link} onPress={() => setAuthState("signUp")}>
-              S'inscrire
+              S&apos;inscrire
             </Text>
           </Text>
         </View>

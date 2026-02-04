@@ -1,15 +1,9 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { View, Text, StyleSheet, Alert, ScrollView } from "react-native";
 
 import { supabase } from "../api/supabase";
 import { tokens } from "../theme/tokens";
-import {
-  Card,
-  RetroButton,
-  RetroInput,
-  RetroRow,
-  RetroCheckbox,
-} from "../theme/components";
+import { Card, RetroButton, RetroInput, RetroRow, RetroCheckbox } from "../theme/components";
 
 // Recettes disponibles (catalogue)
 type RecipeCatalogRow = {
@@ -34,9 +28,7 @@ export default function GroceriesScreen() {
   const [recipeCatalog, setRecipeCatalog] = useState<RecipeCatalogRow[]>([]);
   const [groceryLines, setGroceryLines] = useState<GroceryLineRow[]>([]);
 
-  const [selectedRecipeIds, setSelectedRecipeIds] = useState<Array<number | string>>(
-    []
-  );
+  const [selectedRecipeIds, setSelectedRecipeIds] = useState<(number | string)[]>([]);
 
   const [quantitiesByRecipeId, setQuantitiesByRecipeId] = useState<{
     [key: string]: string;
@@ -96,7 +88,7 @@ export default function GroceriesScreen() {
     return created.id;
   };
 
-  const loadAll = async () => {
+  const loadAll = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -142,11 +134,11 @@ export default function GroceriesScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadAll();
-  }, []);
+  }, [loadAll]);
 
   const submit = async () => {
     if (loading) return;
@@ -216,7 +208,11 @@ export default function GroceriesScreen() {
   return (
     <ScrollView
       style={styles.page}
-      contentContainerStyle={{ gap: tokens.spacing.lg, paddingBottom: tokens.spacing.xl * 3, paddingTop: tokens.spacing.xl }}
+      contentContainerStyle={{
+        gap: tokens.spacing.lg,
+        paddingBottom: tokens.spacing.xl * 3,
+        paddingTop: tokens.spacing.xl,
+      }}
       keyboardShouldPersistTaps="handled"
     >
       <Text style={styles.h1}>Gérer les courses</Text>
@@ -228,7 +224,7 @@ export default function GroceriesScreen() {
         <View style={{ gap: tokens.spacing.xs }}>
           {recipeCatalog.length === 0 ? (
             <Text style={styles.muted}>
-              Pas encore de recette. Veuillez ajouter une recette d'abord.
+              Pas encore de recette. Veuillez ajouter une recette d&apos;abord.
             </Text>
           ) : (
             recipeCatalog.map((rec) => {
@@ -265,10 +261,7 @@ export default function GroceriesScreen() {
           )}
         </View>
 
-        <RetroButton
-          title={loading ? "Chargement..." : "Ajouter aux courses"}
-          onPress={submit}
-        />
+        <RetroButton title={loading ? "Chargement..." : "Ajouter aux courses"} onPress={submit} />
       </Card>
 
       <Card style={{ gap: tokens.spacing.sm }}>
