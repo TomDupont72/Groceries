@@ -304,7 +304,7 @@ export default function BuyingScreen() {
   return (
     <ScrollView
       style={styles.page}
-      contentContainerStyle={{ gap: tokens.spacing.lg, paddingBottom: tokens.spacing.xl * 3 }}
+      contentContainerStyle={{ gap: tokens.spacing.lg, paddingBottom: tokens.spacing.xl * 3, paddingTop: tokens.spacing.xl }}
       keyboardShouldPersistTaps="handled"
     >
       <View style={styles.headerRow}>

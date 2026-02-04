@@ -79,7 +79,6 @@ export default function GroceriesScreen() {
     const { data: existing, error: existingError } = await supabase
       .from("Grocery")
       .select("id")
-      .eq("userId", userId)
       .maybeSingle();
 
     if (existingError) throw existingError;
@@ -217,7 +216,7 @@ export default function GroceriesScreen() {
   return (
     <ScrollView
       style={styles.page}
-      contentContainerStyle={{ gap: tokens.spacing.lg, paddingBottom: tokens.spacing.xl * 3 }}
+      contentContainerStyle={{ gap: tokens.spacing.lg, paddingBottom: tokens.spacing.xl * 3, paddingTop: tokens.spacing.xl }}
       keyboardShouldPersistTaps="handled"
     >
       <Text style={styles.h1}>Gérer les courses</Text>

@@ -45,17 +45,40 @@ export function RetroButton({
 }
 
 export function RetroInput({
-  style,
+  value,
+  onChangeText,
+  placeholder,
+  secureTextEntry = false,
   ...props
-}: TextInputProps & { style?: ViewStyle }) {
+}: {
+  value: string;
+  onChangeText: (t: string) => void;
+  placeholder?: string;
+  secureTextEntry?: boolean;
+} & TextInputProps) {
+  const [show, setShow] = React.useState(false);
+
   return (
-    <TextInput
-      {...props}
-      placeholderTextColor={tokens.colors.muted}
-      style={[styles.input, style]}
-    />
+    <View style={styles.inputWrap}>
+      <TextInput
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        placeholderTextColor={tokens.colors.muted}
+        secureTextEntry={secureTextEntry && !show}
+        style={styles.input}
+        {...props}
+      />
+
+      {secureTextEntry && (
+        <Pressable onPress={() => setShow((s) => !s)} style={styles.eye}>
+          <Text style={styles.eyeText}>{show ? "🙈" : "👁️"}</Text>
+        </Pressable>
+      )}
+    </View>
   );
 }
+
 
 const styles = StyleSheet.create({
   hardShadowWrap: {
@@ -87,16 +110,26 @@ const styles = StyleSheet.create({
     fontSize: tokens.typography.fontSize,
   },
   input: {
-    backgroundColor: tokens.colors.card,
+    flex: 1,
+    backgroundColor: "transparent", // important
     color: tokens.colors.text,
-    borderColor: tokens.colors.border,
+    paddingVertical: tokens.spacing.sm,
+    paddingHorizontal: tokens.spacing.sm,
+  },
+  inputWrap: {
+    flexDirection: "row",
+    alignItems: "center",
     borderWidth: tokens.stroke.thin,
-    borderRadius: 0,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    fontFamily: tokens.typography.fontFamily,
-    letterSpacing: tokens.typography.letterSpacing,
-    fontSize: tokens.typography.fontSize,
+    borderColor: tokens.colors.border,
+    borderRadius: tokens.radius.md,
+    backgroundColor: tokens.colors.bg,
+  },
+  eye: {
+    paddingHorizontal: 10,
+  },
+  eyeText: {
+    color: tokens.colors.text,
+    fontSize: 16,
   },
 });
 

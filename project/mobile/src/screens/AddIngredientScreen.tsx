@@ -108,10 +108,10 @@ export default function AddIngredientScreen() {
 
   return (
     
-    <Screen>
+    <Screen style={{ paddingTop: tokens.spacing.xl * 2, gap: tokens.spacing.lg}}>
       <Text style={styles.h1}>Ajouter un ingrédient</Text>
 
-      <Card style={{ gap: tokens.spacing.sm }}>
+      <Card style={{ gap: tokens.spacing.sm,  }}>
         <RetroInput
           value={name}
           onChangeText={setName}

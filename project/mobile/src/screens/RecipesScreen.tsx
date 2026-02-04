@@ -16,6 +16,7 @@ import {
   RetroRow,
   RetroCheckbox,
 } from "../theme/components";
+import { Screen } from "../theme/Screen";
 
 type IngredientRow = {
   id: number | string;
@@ -207,6 +208,7 @@ export default function RecipesScreen() {
   };
 
   return (
+    <Screen style={{ paddingTop: tokens.spacing.xl}}>
     <ScrollView
       style={styles.page}
       contentContainerStyle={{ gap: tokens.spacing.lg, paddingBottom: tokens.spacing.xl * 3 }}
@@ -297,6 +299,7 @@ export default function RecipesScreen() {
         )}
       </Card>
     </ScrollView>
+    </Screen>
   );
 }
 
