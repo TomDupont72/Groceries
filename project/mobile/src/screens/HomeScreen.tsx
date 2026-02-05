@@ -14,7 +14,7 @@ export default function HomeScreen({ navigation }: any) {
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [authState, setAuthState] = useState<AuthState>("loggedOut");
   const [username, setUsername] = useState("");
-  const version = "1.3.0";
+  const version = "1.3.1";
   const [appVersion, setAppVersion] = useState("");
   const [appLink, setAppLink] = useState("");
 
