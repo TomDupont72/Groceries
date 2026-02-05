@@ -117,3 +117,150 @@ jobs:
 
       - run: npm ci
       - run: npm run test:ci
+
+name: EAS Android Build + Publish URL to Supabase
+
+on:
+  push:
+    branches: [main]
+
+# Avoid running multiple Android builds at the same time
+concurrency:
+  group: eas-android-main
+  cancel-in-progress: true
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: project/mobile/package-lock.json
+
+      - name: Install deps
+        working-directory: project/mobile
+        run: npm ci
+
+      - name: Setup Expo + EAS
+        uses: expo/expo-github-action@v8
+        with:
+          token: ${{ secrets.EXPO_TOKEN }}
+          eas-version: latest
+
+      # Start the build (returns a build id)
+      - name: Start EAS build (Android)
+        id: start_build
+        working-directory: project/mobile
+        run: |
+          eas build -p android --profile preview --non-interactive --json > eas-build.json
+          cat eas-build.json
+
+          BUILD_ID=$(node -e "const fs=require('fs'); const j=JSON.parse(fs.readFileSync('eas-build.json','utf8')); const item=Array.isArray(j)?j[0]:j; console.log(item.id || '')")
+          if [ -z "$BUILD_ID" ]; then
+            echo "Could not extract build id from eas-build.json"
+            exit 1
+          fi
+
+          echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
+          echo "Build ID: $BUILD_ID"
+
+      # Poll until the artifacts URL is available
+      - name: Wait for artifacts (poll)
+        id: wait
+        working-directory: project/mobile
+        run: |
+          BUILD_ID="${{ steps.start_build.outputs.build_id }}"
+
+          # Poll up to ~20 minutes (80 * 15s)
+          for i in $(seq 1 80); do
+            eas build:view --build-id "$BUILD_ID" --json > eas-build-view.json
+
+            STATUS=$(node -e "const fs=require('fs'); const j=JSON.parse(fs.readFileSync('eas-build-view.json','utf8')); console.log(j.status || '')")
+            URL=$(node -e "const fs=require('fs'); const j=JSON.parse(fs.readFileSync('eas-build-view.json','utf8')); console.log(j.artifacts?.buildUrl || j.artifacts?.applicationArchiveUrl || '')")
+
+            echo "Attempt $i: status=$STATUS url=$URL"
+
+            if [ "$STATUS" = "finished" ] && [ -n "$URL" ]; then
+              echo "build_url=$URL" >> $GITHUB_OUTPUT
+              exit 0
+            fi
+
+            if [ "$STATUS" = "errored" ] || [ "$STATUS" = "canceled" ]; then
+              echo "Build failed with status: $STATUS"
+              cat eas-build-view.json
+              exit 1
+            fi
+
+            sleep 15
+          done
+
+          echo "Timed out waiting for artifacts."
+          cat eas-build-view.json
+          exit 1
+
+      # Read version + versionCode from app.json (no repo changes)
+      - name: Extract app version + versionCode
+        id: version
+        working-directory: project/mobile
+        run: |
+          VERSION=$(node -e "const p=require('./app.json'); console.log(p.expo?.version || 'unknown')")
+          VERSION_CODE=$(node -e "const p=require('./app.json'); console.log(p.expo?.android?.versionCode || '0')")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+          echo "VersionCode: $VERSION_CODE"
+
+      # Update Supabase AppConfig (service_role bypasses RLS)
+      - name: Publish build URL to Supabase (AppConfig)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          BUILD_URL: ${{ steps.wait.outputs.build_url }}
+          BUILD_ID: ${{ steps.start_build.outputs.build_id }}
+          VERSION: ${{ steps.version.outputs.version }}
+          VERSION_CODE: ${{ steps.version.outputs.version_code }}
+        run: |
+          # android_build_url
+          curl -sS -X POST "$SUPABASE_URL/rest/v1/AppConfig?on_conflict=name" \
+            -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: resolution=merge-duplicates" \
+            -d "[{\"name\":\"android_build_url\",\"value\":\"$BUILD_URL\"}]" >/dev/null
+
+          # android_version
+          curl -sS -X POST "$SUPABASE_URL/rest/v1/AppConfig?on_conflict=name" \
+            -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: resolution=merge-duplicates" \
+            -d "[{\"name\":\"android_version\",\"value\":\"$VERSION\"}]" >/dev/null
+
+          # android_version_code
+          curl -sS -X POST "$SUPABASE_URL/rest/v1/AppConfig?on_conflict=name" \
+            -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: resolution=merge-duplicates" \
+            -d "[{\"name\":\"android_version_code\",\"value\":\"$VERSION_CODE\"}]" >/dev/null
+
+          # android_build_id
+          curl -sS -X POST "$SUPABASE_URL/rest/v1/AppConfig?on_conflict=name" \
+            -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: resolution=merge-duplicates" \
+            -d "[{\"name\":\"android_build_id\",\"value\":\"$BUILD_ID\"}]" >/dev/null
+
+          echo "✅ Supabase AppConfig updated:"
+          echo " - android_build_url: $BUILD_URL"
+          echo " - android_version: $VERSION"
+          echo " - android_version_code: $VERSION_CODE"
+          echo " - android_build_id: $BUILD_ID"
