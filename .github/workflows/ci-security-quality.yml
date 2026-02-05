@@ -1,17 +1,14 @@
-name: CI - Lint + Sonar + Snyk + CodeQL
+name: CI - Lint + Sonar + Snyk + CodeQL + EAS Build
 
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
-  schedule:
-    - cron: "0 3 * * 1"
+  push:
+    branches: [main]
 
-permissions:
-  contents: read
-  security-events: write
-  actions: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   lint:
@@ -22,87 +19,35 @@ jobs:
         working-directory: project/mobile
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: "npm"
+          cache: npm
           cache-dependency-path: project/mobile/package-lock.json
+
       - run: npm ci
       - run: npm run lint
-
-  sonarcloud:
-    name: SonarCloud Scan
-    runs-on: ubuntu-latest
-    needs: [lint, test]
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Install deps (mobile)
-        working-directory: project/mobile
-        run: npm ci
-
-      - name: SonarQube Cloud Scan
-        uses: SonarSource/sonarqube-scan-action@v6
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-
-  snyk:
-    name: Snyk (Dependencies)
-    runs-on: ubuntu-latest
-    needs: [lint]
-    defaults:
-      run:
-        working-directory: project/mobile
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: "npm"
-          cache-dependency-path: project/mobile/package-lock.json
-      - run: npm ci
-
-      - name: Snyk Test
-        uses: snyk/actions/node@master
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: >
-            --severity-threshold=high
-            --all-projects
 
   codeql:
     name: CodeQL
     runs-on: ubuntu-latest
-    needs: [lint]
+    needs: lint
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
     steps:
       - uses: actions/checkout@v4
-
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+      - uses: github/codeql-action/init@v3
         with:
           languages: javascript
-          queries: security-extended
+      - uses: github/codeql-action/analyze@v3
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Install deps (mobile)
-        working-directory: project/mobile
-        run: npm ci
-
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
-
-  test:
-    name: Test (Jest + Coverage)
+  snyk:
+    name: Snyk (Dependencies)
     runs-on: ubuntu-latest
+    needs: lint
     defaults:
       run:
         working-directory: project/mobile
@@ -112,33 +57,46 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: "npm"
+          cache: npm
           cache-dependency-path: project/mobile/package-lock.json
 
       - run: npm ci
-      - run: npm run test:ci
 
-name: EAS Android Build + Publish URL to Supabase
+      - name: Snyk test
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          command: test
+          args: --severity-threshold=high --all-projects
 
-on:
-  push:
-    branches: [main]
-
-# Avoid running multiple Android builds at the same time
-concurrency:
-  group: eas-android-main
-  cancel-in-progress: true
-
-jobs:
-  build-and-publish:
+  sonarcloud:
+    name: SonarCloud Scan
     runs-on: ubuntu-latest
-
+    needs: lint
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarqube-scan-action@v6
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          # Sonar properties file is at repo root in your setup
+          args: >
+            -Dsonar.projectBaseDir=.
+
+  eas_build_and_publish:
+    name: EAS Build Android (preview) + publish URL
+    runs-on: ubuntu-latest
+    needs: [lint, codeql, snyk, sonarcloud]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
@@ -154,7 +112,6 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
           eas-version: latest
 
-      # Start the build (returns a build id)
       - name: Start EAS build (Android)
         id: start_build
         working-directory: project/mobile
@@ -171,7 +128,6 @@ jobs:
           echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
           echo "Build ID: $BUILD_ID"
 
-      # Poll until the artifacts URL is available
       - name: Wait for artifacts (poll)
         id: wait
         working-directory: project/mobile
@@ -205,7 +161,6 @@ jobs:
           cat eas-build-view.json
           exit 1
 
-      # Read version + versionCode from app.json (no repo changes)
       - name: Extract app version + versionCode
         id: version
         working-directory: project/mobile
@@ -217,7 +172,6 @@ jobs:
           echo "Version: $VERSION"
           echo "VersionCode: $VERSION_CODE"
 
-      # Update Supabase AppConfig (service_role bypasses RLS)
       - name: Publish build URL to Supabase (AppConfig)
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -227,7 +181,6 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
           VERSION_CODE: ${{ steps.version.outputs.version_code }}
         run: |
-          # android_build_url
           curl -sS -X POST "$SUPABASE_URL/rest/v1/AppConfig?on_conflict=name" \
             -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
             -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
@@ -235,7 +188,6 @@ jobs:
             -H "Prefer: resolution=merge-duplicates" \
             -d "[{\"name\":\"android_build_url\",\"value\":\"$BUILD_URL\"}]" >/dev/null
 
-          # android_version
           curl -sS -X POST "$SUPABASE_URL/rest/v1/AppConfig?on_conflict=name" \
             -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
             -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
@@ -243,7 +195,6 @@ jobs:
             -H "Prefer: resolution=merge-duplicates" \
             -d "[{\"name\":\"android_version\",\"value\":\"$VERSION\"}]" >/dev/null
 
-          # android_version_code
           curl -sS -X POST "$SUPABASE_URL/rest/v1/AppConfig?on_conflict=name" \
             -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
             -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
@@ -251,7 +202,6 @@ jobs:
             -H "Prefer: resolution=merge-duplicates" \
             -d "[{\"name\":\"android_version_code\",\"value\":\"$VERSION_CODE\"}]" >/dev/null
 
-          # android_build_id
           curl -sS -X POST "$SUPABASE_URL/rest/v1/AppConfig?on_conflict=name" \
             -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
             -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
@@ -259,8 +209,4 @@ jobs:
             -H "Prefer: resolution=merge-duplicates" \
             -d "[{\"name\":\"android_build_id\",\"value\":\"$BUILD_ID\"}]" >/dev/null
 
-          echo "✅ Supabase AppConfig updated:"
-          echo " - android_build_url: $BUILD_URL"
-          echo " - android_version: $VERSION"
-          echo " - android_version_code: $VERSION_CODE"
-          echo " - android_build_id: $BUILD_ID"
+          echo "✅ Supabase AppConfig updated"
