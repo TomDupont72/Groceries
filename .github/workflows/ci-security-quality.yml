@@ -115,6 +115,8 @@ jobs:
       - name: Start EAS build (Android)
         id: start_build
         working-directory: project/mobile
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
           eas build -p android --profile preview --non-interactive --json > eas-build.json
           cat eas-build.json
@@ -131,12 +133,19 @@ jobs:
       - name: Wait for artifacts (poll)
         id: wait
         working-directory: project/mobile
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
           BUILD_ID="${{ steps.start_build.outputs.build_id }}"
 
           # Poll up to ~20 minutes (80 * 15s)
           for i in $(seq 1 80); do
-            eas build:view --build-id "$BUILD_ID" --json > eas-build-view.json
+            # ✅ Most compatible form: build id as positional argument
+            if ! eas build:view "$BUILD_ID" --json --non-interactive > eas-build-view.json; then
+              echo "build:view failed (attempt $i). Retrying in 15s..."
+              sleep 15
+              continue
+            fi
 
             STATUS=$(node -e "const fs=require('fs'); const j=JSON.parse(fs.readFileSync('eas-build-view.json','utf8')); console.log(j.status || '')")
             URL=$(node -e "const fs=require('fs'); const j=JSON.parse(fs.readFileSync('eas-build-view.json','utf8')); console.log(j.artifacts?.buildUrl || j.artifacts?.applicationArchiveUrl || '')")
