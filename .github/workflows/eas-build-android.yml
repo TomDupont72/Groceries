@@ -104,9 +104,9 @@ jobs:
 
           // On stocke ce que tu veux : URL + version
           const rows = [
-            { name: "android_apk_url_preview", value: buildUrl },
-            { name: "android_app_version", value: appVersion },
-            { name: "android_version_code", value: String(androidVersionCode) },
+            { name: "link", value: buildUrl },
+            { name: "version", value: appVersion },
+            { name: "androidVersion", value: String(androidVersionCode) },
           ];
 
           (async () => {
