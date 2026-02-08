@@ -20,6 +20,7 @@ export default function ComboBox({
   onChange,
   onPick,
   placeholder = "Nom",
+  label,
   max = 6,
   style,
 }: {
@@ -28,6 +29,7 @@ export default function ComboBox({
   onChange?: (v: string) => void;
   onPick?: (it: ComboItem) => void;
   placeholder?: string;
+  label?: string;
   max?: number;
   style?: ViewStyle;
 }) {
@@ -76,6 +78,8 @@ export default function ComboBox({
 
   return (
     <View style={[styles.comboWrap, style]}>
+      {label && <Text style={styles.label}>{label}</Text>}
+      
       <TextInput
         ref={inputRef}
         value={value}
@@ -105,11 +109,12 @@ export default function ComboBox({
       />
 
       {open && filtered.length > 0 && (
-        <View style={[styles.list, { top: inputH + 6 }]}>
+        <View style={[styles.list, { top: inputH + (label ? 30 : 6) }]}>
           <ScrollView
             style={{ maxHeight: 240 }}
-            keyboardShouldPersistTaps="always"
+            keyboardShouldPersistTaps="handled"
             nestedScrollEnabled
+            scrollEnabled={filtered.length > 4}
           >
             {filtered.map((item, index) => {
               const isActive = index === hover;
@@ -117,15 +122,16 @@ export default function ComboBox({
               return (
                 <Pressable
                   key={item.name}
-                  // IMPORTANT : on sélectionne sur PressIn (avant blur/démontage)
-                  onPressIn={() => {
+                  onPress={() => {
                     ignoreBlurRef.current = true;
                     setHover(index);
                     select(item);
-                    // on relâche le lock après le tick UI
                     setTimeout(() => {
                       ignoreBlurRef.current = false;
-                    }, 0);
+                    }, 100);
+                  }}
+                  onPressIn={() => {
+                    ignoreBlurRef.current = true;
                   }}
                   style={[styles.item, isActive && styles.itemActive]}
                 >
@@ -145,6 +151,12 @@ const styles = StyleSheet.create({
     width: "100%",
     position: "relative",
   },
+  label: {
+    fontFamily: tokens.typography.fontFamilyStrong,
+    fontSize: tokens.typography.small,
+    color: tokens.colors.text,
+    marginBottom: 6,
+  },
   input: {
     width: "100%",
     borderWidth: tokens.stroke.thin,
@@ -153,9 +165,10 @@ const styles = StyleSheet.create({
     color: tokens.colors.text,
     paddingVertical: 10,
     paddingHorizontal: 12,
-    fontSize: tokens.typography?.fontSize ?? 14,
-    letterSpacing: tokens.typography?.letterSpacing ?? 0.2,
-    fontFamily: tokens.typography?.fontFamily,
+    fontSize: tokens.typography.fontSize,
+    letterSpacing: tokens.typography.letterSpacing,
+    fontFamily: tokens.typography.fontFamily,
+    borderRadius: 0,
   },
   list: {
     position: "absolute",
@@ -166,11 +179,11 @@ const styles = StyleSheet.create({
     borderWidth: tokens.stroke.thin,
     borderColor: tokens.colors.border,
     backgroundColor: tokens.colors.card,
-    // hard shadow retro
+    // hard shadow retro (keeping it!)
     shadowColor: "#000",
     shadowOpacity: 1,
     shadowRadius: 0,
-    shadowOffset: { width: 0, height: 8 },
+    shadowOffset: { width: 0, height: tokens.shadow.offset },
     overflow: "hidden",
   },
   item: {
@@ -180,20 +193,17 @@ const styles = StyleSheet.create({
     gap: 6,
     alignItems: "center",
     borderTopWidth: 1,
-    borderTopColor: "#1a1a1f",
+    borderTopColor: tokens.colors.borderSubtle,
   },
   itemActive: {
-    backgroundColor: tokens.colors.hover ?? "#101014",
+    backgroundColor: tokens.colors.hover,
+    borderLeftWidth: 2,
+    borderLeftColor: tokens.colors.accent,
   },
   itemMain: {
     color: tokens.colors.text,
-    fontFamily: tokens.typography?.fontFamilyStrong ?? tokens.typography?.fontFamily,
+    fontFamily: tokens.typography.fontFamilyStrong,
     fontSize: 14,
-  },
-  itemSub: {
-    color: tokens.colors.text,
-    opacity: 0.9,
-    fontSize: 13,
-    fontFamily: tokens.typography?.fontFamily,
+    letterSpacing: tokens.typography.letterSpacing,
   },
 });

@@ -175,6 +175,11 @@ export default function HomeScreen({ navigation }: any) {
                 onPress={() => navigation.navigate("Buying")}
               />
 
+              <RetroButton
+                title="Demo"
+                onPress={() => navigation.navigate("Demo")}
+              />
+
               <RetroButton title="Se déconnecter" onPress={logout} />
             </Card>
 
