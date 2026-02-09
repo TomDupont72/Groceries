@@ -1,0 +1,130 @@
+name: EAS Build Android (preview) + publish URL
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: eas-android-preview-main
+  cancel-in-progress: true
+
+jobs:
+  eas-android-preview:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    env:
+      APP_DIR: project/mobile
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: project/mobile/package-lock.json
+
+      - name: Install deps
+        working-directory: project/mobile
+        run: npm ci
+
+      - name: Setup Expo + EAS
+        uses: expo/expo-github-action@v8
+        with:
+          token: ${{ secrets.EXPO_TOKEN }}
+          eas-version: latest
+
+      # 1) Build (et ATTEND la fin) + JSON avec buildUrl
+      - name: EAS build Android (preview)
+        id: eas_build
+        working-directory: project/mobile
+        run: |
+          eas build -p android --profile preview --non-interactive --wait --json > eas-build.json
+
+          BUILD_URL=$(node -p "require('./eas-build.json')[0].artifacts.buildUrl")
+          BUILD_ID=$(node -p "require('./eas-build.json')[0].id")
+
+          echo "Build ID: $BUILD_ID"
+          echo "Build URL: $BUILD_URL"
+
+          echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
+          echo "build_url=$BUILD_URL" >> $GITHUB_OUTPUT
+
+      # 2) Lire la version dans app.json (option B)
+      - name: Read app version from app.json
+        id: app_version
+        working-directory: project/mobile
+        run: |
+          APP_VERSION=$(node -e "const fs=require('fs'); const p='./app.json'; const j=JSON.parse(fs.readFileSync(p,'utf8')); console.log(j.expo?.version ?? '')")
+          ANDROID_VERSION_CODE=$(node -e "const fs=require('fs'); const p='./app.json'; const j=JSON.parse(fs.readFileSync(p,'utf8')); console.log(j.expo?.android?.versionCode ?? '')")
+
+          echo "App version: $APP_VERSION"
+          echo "Android versionCode: $ANDROID_VERSION_CODE"
+
+          echo "app_version=$APP_VERSION" >> $GITHUB_OUTPUT
+          echo "android_version_code=$ANDROID_VERSION_CODE" >> $GITHUB_OUTPUT
+
+      # 3) Publier en base Supabase (AppConfig)
+      - name: Publish build URL to Supabase (AppConfig)
+        working-directory: project/mobile
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          BUILD_URL: ${{ steps.eas_build.outputs.build_url }}
+          APP_VERSION: ${{ steps.app_version.outputs.app_version }}
+          ANDROID_VERSION_CODE: ${{ steps.app_version.outputs.android_version_code }}
+        run: |
+          node - <<'NODE'
+          const { createClient } = require('@supabase/supabase-js');
+
+          const url = process.env.SUPABASE_URL;
+          const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+          if (!url || !key) {
+            console.error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
+            process.exit(1);
+          }
+
+          const supabase = createClient(url, key, { auth: { persistSession: false } });
+
+          const buildUrl = process.env.BUILD_URL;
+          const appVersion = process.env.APP_VERSION || "";
+          const androidVersionCode = process.env.ANDROID_VERSION_CODE || "";
+
+          if (!buildUrl) {
+            console.error("Missing BUILD_URL (did the build step run?)");
+            process.exit(1);
+          }
+
+          // On stocke ce que tu veux : URL + version
+          const rows = [
+            { name: "link", value: buildUrl },
+            { name: "version", value: appVersion },
+            { name: "androidVersion", value: String(androidVersionCode) },
+          ];
+
+          (async () => {
+            const { error } = await supabase
+              .from("AppConfig")
+              .upsert(rows, { onConflict: "name" });
+
+            if (error) {
+              console.error("Supabase upsert failed:", error);
+              process.exit(1);
+            }
+
+            console.log("✅ Published to AppConfig:", rows);
+          })();
+          NODE
+
+      - name: Summary
+        run: |
+          echo "✅ APK URL: ${{ steps.eas_build.outputs.build_url }}"
+          echo "✅ App version: ${{ steps.app_version.outputs.app_version }}"
+          echo "✅ versionCode: ${{ steps.app_version.outputs.android_version_code }}"
