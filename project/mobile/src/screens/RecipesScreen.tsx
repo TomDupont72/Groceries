@@ -1,10 +1,9 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, Alert, ScrollView } from "react-native";
 
 import { supabase } from "../api/supabase";
-import { tokens } from "../theme/tokens";
-import { Card, RetroButton, RetroInput, RetroRow, RetroCheckbox } from "../theme/components";
-import { Screen } from "../theme/Screen";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useTheme, Card, Input, List, ListItem, ListItemInput, ListItemText, Checkbox, Button } from "../theme/index"
 
 type IngredientRow = {
   id: number | string;
@@ -20,6 +19,8 @@ type RecipeRow = {
 };
 
 export default function RecipesScreen() {
+  const { theme } = useTheme();
+
   const [loading, setLoading] = useState(false);
   const [recipeName, setRecipeName] = useState("");
 
@@ -31,8 +32,6 @@ export default function RecipesScreen() {
   const [quantitiesByIngredientId, setQuantitiesByIngredientId] = useState<{
     [key: string]: string;
   }>({});
-
-  const selectedCount = selectedIngredientIds.length;
 
   const toggleIngredient = (id: number | string) => {
     const key = String(id);
@@ -58,12 +57,6 @@ export default function RecipesScreen() {
     const key = String(id);
     setQuantitiesByIngredientId((prev) => ({ ...prev, [key]: value }));
   };
-
-  const selectedLabel = useMemo(() => {
-    if (selectedCount === 0) return "Pas d'ingrédient sélectionné";
-    if (selectedCount === 1) return "1 ingrédient sélectionné";
-    return `${selectedCount} ingrédients sélectionnés`;
-  }, [selectedCount]);
 
   const loadAll = async () => {
     try {
@@ -188,160 +181,54 @@ export default function RecipesScreen() {
   };
 
   return (
-    <Screen style={{ paddingTop: tokens.spacing.xl }}>
-      <ScrollView
-        style={styles.page}
-        contentContainerStyle={{ gap: tokens.spacing.lg, paddingBottom: tokens.spacing.xl * 3 }}
-        keyboardShouldPersistTaps="handled"
-      >
-        <Text style={styles.h1}>Gérer les recettes</Text>
-
-        <Card style={{ gap: tokens.spacing.sm }}>
-          <Text style={styles.h2}>Créer une recette</Text>
-
-          <RetroInput
-            value={recipeName}
-            onChangeText={setRecipeName}
-            placeholder="Nom de la recette"
-          />
-
-          <Text style={styles.muted}>{selectedLabel}</Text>
-
-          <View style={{ gap: tokens.spacing.xs }}>
-            {ingredients.length === 0 ? (
-              <Text style={styles.muted}>
-                Pas encore d&apos;ingrédient. Veuillez d&apos;abord ajouter un ingrédient.
-              </Text>
-            ) : (
-              ingredients.map((ing) => {
-                const selected = selectedIngredientIds.includes(ing.id);
-                const quantity = quantitiesByIngredientId[String(ing.id)] ?? "";
-
-                return (
-                  <RetroRow
-                    key={String(ing.id)}
-                    selected={selected}
-                    onPress={() => toggleIngredient(ing.id)}
-                  >
-                    <View style={styles.ingLeft}>
-                      <View style={styles.ingTitleRow}>
-                        <RetroCheckbox checked={selected} />
-                        <Text style={styles.ingName}>{ing.name}</Text>
-                      </View>
-                      {!!ing.unit && <Text style={styles.ingMeta}>{ing.unit}</Text>}
-                    </View>
-
-                    {selected ? (
-                      <View style={styles.ingRight}>
-                        <RetroInput
-                          value={quantity}
-                          onChangeText={(txt) => setQuantityForIngredient(ing.id, txt)}
-                          placeholder="Qty"
-                        />
-                      </View>
-                    ) : (
-                      <View style={styles.ingRight} />
-                    )}
-                  </RetroRow>
-                );
-              })
-            )}
-          </View>
-
-          <RetroButton title={loading ? "Chargement..." : "Ajouter une recette"} onPress={submit} />
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.bg }]}>
+      <ScrollView contentContainerStyle={[styles.section, { paddingBottom: theme.spacing.xl * 3 }]}>
+        <Text style={{color: theme.colors.text, fontFamily: theme.fontFamily.mono.md, fontSize: theme.fontSize.xxl}}>Gérer les recettes</Text>
+        <Card variant="outlined" padding="md" style={styles.section}>
+          <Input label="Nom de la recette" value={recipeName} onChangeText={setRecipeName} containerStyle={{ marginBottom: theme.spacing.md }}/>
+          <List header="Ingredients" columns={[20, "flex", 60, 65]}>
+            {ingredients.map((item) => (
+              <ListItem key={item.id}>
+                <Checkbox checked={selectedIngredientIds.includes(item.id)} onPress={() => toggleIngredient(item.id)}/>
+                <ListItemText>{item.name}</ListItemText>
+                <ListItemInput value={quantitiesByIngredientId[item.id]} onChangeText={(txt) => setQuantityForIngredient(item.id, txt)} placeholder="Qté" keyboardType="numeric"/>
+                <ListItemText variant="muted">{item.unit}</ListItemText>
+              </ListItem>
+            ))}
+          </List>
+          <Button title="Ajouter une recette" onPress={submit} fullWidth loading={loading}/>
         </Card>
-
-        <Card style={{ gap: tokens.spacing.sm }}>
-          <View style={styles.rowBetween}>
-            <Text style={styles.h2}>Mes recettes</Text>
-            <RetroButton title={loading ? "..." : "Rafraîchir"} onPress={loadAll} />
-          </View>
-
-          {recipes.length === 0 ? (
-            <Text style={styles.muted}>Pas encore de recettes.</Text>
-          ) : (
-            recipes.map((r) => (
-              <View key={String(r.id)} style={styles.recipeRow}>
-                <Text style={styles.recipeName}>{r.name}</Text>
-              </View>
-            ))
-          )}
+        <View style={styles.rowBetween}>
+          <Text style={{color: theme.colors.text, fontFamily: theme.fontFamily.mono.md, fontSize: theme.fontSize.xxl}}>Mes recettes</Text>
+          <Button title="Rafraîchir" onPress={loadAll} loading={loading}/>
+        </View>
+        <Card variant="outlined" padding="md" style={styles.section}>
+          <List header="Recettes" columns={["flex"]}>
+            {recipes.map((item) => (
+              <ListItem key={item.id}>
+                <ListItemText>{item.name}</ListItemText>
+              </ListItem>
+            ))}
+          </List>
         </Card>
       </ScrollView>
-    </Screen>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  page: {
+  safeArea: {
     flex: 1,
-    backgroundColor: tokens.colors.bg,
-    padding: tokens.spacing.lg,
+    padding: 18,
   },
-
-  h1: {
-    color: tokens.colors.text,
-    fontSize: tokens.typography.h1,
-    fontFamily: tokens.typography.fontFamilyStrong,
-    letterSpacing: tokens.typography.letterSpacing,
-    marginBottom: tokens.spacing.md,
+  section: {
+    flexDirection: "column",
+    gap: 18,
   },
-  h2: {
-    color: tokens.colors.text,
-    fontSize: tokens.typography.h2,
-    fontFamily: tokens.typography.fontFamilyStrong,
-    letterSpacing: tokens.typography.letterSpacing,
-    marginBottom: tokens.spacing.md,
-  },
-
-  muted: {
-    color: tokens.colors.muted,
-    fontFamily: tokens.typography.fontFamily,
-    letterSpacing: tokens.typography.letterSpacing,
-  },
-
   rowBetween: {
     flexDirection: "row",
-    alignItems: "center",
     justifyContent: "space-between",
-  },
-
-  ingLeft: {
-    flex: 1,
-    gap: 6,
-  },
-  ingTitleRow: {
-    flexDirection: "row",
     alignItems: "center",
     gap: 10,
-  },
-  ingRight: {
-    width: 110,
-  },
-  ingName: {
-    color: tokens.colors.text,
-    fontFamily: tokens.typography.fontFamily,
-    letterSpacing: tokens.typography.letterSpacing,
-    fontSize: tokens.typography.fontSize,
-  },
-  ingMeta: {
-    color: tokens.colors.muted,
-    fontFamily: tokens.typography.fontFamily,
-    letterSpacing: tokens.typography.letterSpacing,
-    fontSize: 12,
-  },
-
-  recipeRow: {
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    backgroundColor: tokens.colors.card,
-    borderWidth: tokens.stroke.thin,
-    borderColor: tokens.colors.border,
-    borderRadius: 0,
-  },
-  recipeName: {
-    color: tokens.colors.text,
-    fontFamily: tokens.typography.fontFamily,
-    letterSpacing: tokens.typography.letterSpacing,
   },
 });
