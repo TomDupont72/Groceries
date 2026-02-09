@@ -1,5 +1,5 @@
 import React from "react";
-import { View, StyleSheet, ViewStyle, Pressable } from "react-native";
+import { View, ViewStyle, Pressable } from "react-native";
 import { useTheme } from "./ThemeProvider";
 
 interface CardProps {

@@ -10,7 +10,6 @@ import {
   Card,
   Badge,
   Checkbox,
-  Avatar,
   UserRow,
   Select,
   AccentColor,
@@ -18,11 +17,15 @@ import {
   ComboBox,
   Switch,
   Slider,
-  RadioGroup
+  RadioGroup,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemInput,
 } from "../theme/index";
 
 function DemoContent() {
-  const { theme, mode, accentColor, setTheme, toggleMode, setAccentColor } =
+  const { theme, mode, accentColor, setTheme, toggleMode } =
     useTheme();
 
   // Form states
@@ -62,6 +65,21 @@ function DemoContent() {
     { label: "💗 Pink", value: "pink" },
     { label: "🟠 Orange", value: "orange" },
   ];
+
+  const [ingredients, setIngredients] = useState([
+    { id: "1", name: "Farine", checked: true, quantity: "500", unit: "g" },
+    { id: "2", name: "Sucre", checked: false, quantity: "200", unit: "g" },
+    { id: "3", name: "Oeufs", checked: true, quantity: "3", unit: "pièces" },
+    { id: "4", name: "Beurre", checked: false, quantity: "100", unit: "g" },
+  ]);
+
+  const updateIngredient = (id: string, field: string, value: any) => {
+    setIngredients((prev) =>
+      prev.map((item) =>
+        item.id === id ? { ...item, [field]: value } : item
+      )
+    );
+  };
 
   const handleThemeChange = (value: string) => {
     const newMode = value as ThemeMode;
@@ -444,9 +462,44 @@ function DemoContent() {
         </View>
 
         <ComboBox label="Fruit" value={comboValue} onChange={setComboValue} options={comboOptions} containerStyle={{ marginBottom: 16 }} />
-          <Switch value={switchValue} onValueChange={setSwitchValue} label="Notifications" style={{ marginBottom: 16 }} />
-          <RadioGroup options={radioOptions} value={radioValue} onChange={setRadioValue} style={{ marginBottom: 16 }} />
-          <Slider label="Volume" value={sliderValue} onValueChange={setSliderValue} />
+        <Switch value={switchValue} onValueChange={setSwitchValue} label="Notifications" style={{ marginBottom: 16 }} />
+        <RadioGroup options={radioOptions} value={radioValue} onChange={setRadioValue} style={{ marginBottom: 16 }} />
+        <Slider label="Volume" value={sliderValue} onValueChange={setSliderValue} />
+        <Card padding="md">
+        <List
+            header="Ingrédients"
+            headerRight={
+              <Button
+                title="+ Ajouter"
+                onPress={() => console.log("Add ingredient")}
+                size="sm"
+                variant="outline"
+              />
+            }
+            // columns: [checkbox, nom, quantité, unité]
+            columns={[20, "flex", 80, 60]}
+          >
+            {ingredients.map((item) => (
+              <ListItem key={item.id}>
+                <Checkbox
+                  checked={item.checked}
+                  onPress={() => updateIngredient(item.id, "checked", !item.checked)}
+                />
+
+                <ListItemText>{item.name}</ListItemText>
+
+                <ListItemInput
+                  value={item.quantity}
+                  onChangeText={(val) => updateIngredient(item.id, "quantity", val)}
+                  placeholder="Qté"
+                  keyboardType="numeric"
+                />
+
+                <ListItemText variant="muted">{item.unit}</ListItemText>
+              </ListItem>
+            ))}
+          </List>
+          </Card>
 
         <View style={{ height: 40 }} />
       </ScrollView>

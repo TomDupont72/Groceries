@@ -103,7 +103,7 @@ export default function AddIngredientScreen() {
           <Input label="Nom de l'ingrédient" value={name} onChangeText={setName} containerStyle={{ marginBottom: theme.spacing.md }}/>
           <Input label="Unité de l'ingrédient" value={unit} onChangeText={setUnit} autoCapitalize="none" containerStyle={{ marginBottom: theme.spacing.md }}/>
           <ComboBox label="Choisir une zone" value={zoneName} onChange={setZoneName} options={zoneOptions} onSelectItem={(it) => setZoneId(Number(it.value))} containerStyle={{ marginBottom: theme.spacing.md }} />
-          <Button title={loading ? "Chargement..." : "Ajouter"} onPress={submit} fullWidth/>
+          <Button title="Ajouter" onPress={submit} fullWidth loading={loading}/>
         </Card>
       </View>
     </SafeAreaView>

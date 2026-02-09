@@ -102,6 +102,7 @@ const styles = StyleSheet.create({
   checkmark: {
     fontSize: 14,
     fontWeight: "700",
+    transform: [{ translateY: -2 }],
   },
   checkboxLabel: {
     flex: 1,

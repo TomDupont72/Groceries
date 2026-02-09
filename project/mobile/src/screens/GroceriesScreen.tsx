@@ -1,9 +1,9 @@
-import React, { useEffect, useMemo, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { View, Text, StyleSheet, Alert, ScrollView } from "react-native";
 
 import { supabase } from "../api/supabase";
-import { tokens } from "../theme/tokens";
-import { Card, RetroButton, RetroInput, RetroRow, RetroCheckbox } from "../theme/components";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useTheme, Card, List, ListItem, ListItemInput, ListItemText, Checkbox, Button } from "../theme/index"
 
 // Recettes disponibles (catalogue)
 type RecipeCatalogRow = {
@@ -21,6 +21,8 @@ type GroceryLineRow = {
 };
 
 export default function GroceriesScreen() {
+  const { theme } = useTheme();
+
   const [loading, setLoading] = useState(false);
 
   const [groceryId, setGroceryId] = useState<number | string | null>(null);
@@ -33,8 +35,6 @@ export default function GroceriesScreen() {
   const [quantitiesByRecipeId, setQuantitiesByRecipeId] = useState<{
     [key: string]: string;
   }>({});
-
-  const selectedCount = selectedRecipeIds.length;
 
   const toggleRecipe = (id: number | string) => {
     const key = String(id);
@@ -60,12 +60,6 @@ export default function GroceriesScreen() {
     const key = String(id);
     setQuantitiesByRecipeId((prev) => ({ ...prev, [key]: value }));
   };
-
-  const selectedLabel = useMemo(() => {
-    if (selectedCount === 0) return "Pas de recette sélectionnée";
-    if (selectedCount === 1) return "1 recette sélectionnée";
-    return `${selectedCount} recettes sélectionnées`;
-  }, [selectedCount]);
 
   const getOrCreateGroceryId = async (userId: string) => {
     const { data: existing, error: existingError } = await supabase
@@ -206,158 +200,53 @@ export default function GroceriesScreen() {
   };
 
   return (
-    <ScrollView
-      style={styles.page}
-      contentContainerStyle={{
-        gap: tokens.spacing.lg,
-        paddingBottom: tokens.spacing.xl * 3,
-        paddingTop: tokens.spacing.xl,
-      }}
-      keyboardShouldPersistTaps="handled"
-    >
-      <Text style={styles.h1}>Gérer les courses</Text>
-
-      <Card style={{ gap: tokens.spacing.sm }}>
-        <Text style={styles.h2}>Ajouter des recettes aux courses</Text>
-        <Text style={styles.muted}>{selectedLabel}</Text>
-
-        <View style={{ gap: tokens.spacing.xs }}>
-          {recipeCatalog.length === 0 ? (
-            <Text style={styles.muted}>
-              Pas encore de recette. Veuillez ajouter une recette d&apos;abord.
-            </Text>
-          ) : (
-            recipeCatalog.map((rec) => {
-              const selected = selectedRecipeIds.includes(rec.id);
-              const quantity = quantitiesByRecipeId[String(rec.id)] ?? "";
-
-              return (
-                <RetroRow
-                  key={String(rec.id)}
-                  selected={selected}
-                  onPress={() => toggleRecipe(rec.id)}
-                >
-                  <View style={styles.left}>
-                    <View style={styles.titleRow}>
-                      <RetroCheckbox checked={selected} />
-                      <Text style={styles.itemName}>{rec.name}</Text>
-                    </View>
-                  </View>
-
-                  {selected ? (
-                    <View style={styles.right}>
-                      <RetroInput
-                        value={quantity}
-                        onChangeText={(txt) => setQuantityForRecipe(rec.id, txt)}
-                        placeholder="Quantité"
-                      />
-                    </View>
-                  ) : (
-                    <View style={styles.right} />
-                  )}
-                </RetroRow>
-              );
-            })
-          )}
-        </View>
-
-        <RetroButton title={loading ? "Chargement..." : "Ajouter aux courses"} onPress={submit} />
-      </Card>
-
-      <Card style={{ gap: tokens.spacing.sm }}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.bg }]}>
+      <ScrollView contentContainerStyle={[styles.section, { paddingBottom: theme.spacing.xl * 3 }]}>
+        <Text style={{color: theme.colors.text, fontFamily: theme.fontFamily.mono.md, fontSize: theme.fontSize.xxl}}>Gérer les courses</Text>
+        <Card variant="outlined" padding="md" style={styles.section}>
+          <List header="Recettes" columns={[20, "flex", 60]}>
+            {recipeCatalog.map((item) => (
+              <ListItem key={item.id}>
+                <Checkbox checked={selectedRecipeIds.includes(item.id)} onPress={() => toggleRecipe(item.id)}/>
+                <ListItemText>{item.name}</ListItemText>
+                <ListItemInput value={quantitiesByRecipeId[item.id]} onChangeText={(txt) => setQuantityForRecipe(item.id, txt)} placeholder="Qté" keyboardType="numeric"/>
+              </ListItem>
+            ))}
+          </List>
+          <Button title="Ajouter aux courses" onPress={submit} fullWidth loading={loading}/>
+        </Card>
         <View style={styles.rowBetween}>
-          <Text style={styles.h2}>Mes courses</Text>
-          <RetroButton title={loading ? "..." : "Rafraîchir"} onPress={loadAll} />
+          <Text style={{color: theme.colors.text, fontFamily: theme.fontFamily.mono.md, fontSize: theme.fontSize.xxl}}>Mes courses</Text>
+          <Button title="Rafraîchir" onPress={loadAll} loading={loading}/>
         </View>
-
-        {groceryLines.length === 0 ? (
-          <Text style={styles.muted}>Pas encore de recette.</Text>
-        ) : (
-          groceryLines.map((line) => (
-            <View key={String(line.id)} style={styles.recipeRow}>
-              <Text style={styles.recipeName}>
-                {line.recipe?.name ?? `Recette #${String(line.recipeId)}`}
-              </Text>
-              <Text style={styles.recipeMeta}>Quantité: {line.quantity ?? "-"}</Text>
-            </View>
-          ))
-        )}
-      </Card>
-    </ScrollView>
+        <Card variant="outlined" padding="md" style={styles.section}>
+          <List header="Courses" columns={["flex", 70]} columnHeaders={["Recette", "Quantité"]}>
+            {groceryLines.map((item) => (
+              <ListItem key={item.id}>
+                <ListItemText>{item.recipe?.name ?? `Recette #${String(item.recipeId)}`}</ListItemText>
+                <ListItemText style={{alignSelf: "center"}}>{item.quantity ?? "-"}</ListItemText>
+              </ListItem>
+            ))}
+          </List>
+        </Card>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  page: {
+  safeArea: {
     flex: 1,
-    backgroundColor: tokens.colors.bg,
-    padding: tokens.spacing.lg,
+    padding: 18,
   },
-
-  h1: {
-    color: tokens.colors.text,
-    fontSize: tokens.typography.h1,
-    fontFamily: tokens.typography.fontFamilyStrong,
-    letterSpacing: tokens.typography.letterSpacing,
-    marginBottom: tokens.spacing.md,
+  section: {
+    flexDirection: "column",
+    gap: 18,
   },
-  h2: {
-    color: tokens.colors.text,
-    fontSize: tokens.typography.h2,
-    fontFamily: tokens.typography.fontFamilyStrong,
-    letterSpacing: tokens.typography.letterSpacing,
-    marginBottom: tokens.spacing.md,
-  },
-
-  muted: {
-    color: tokens.colors.muted,
-    fontFamily: tokens.typography.fontFamily,
-    letterSpacing: tokens.typography.letterSpacing,
-  },
-
   rowBetween: {
     flexDirection: "row",
-    alignItems: "center",
     justifyContent: "space-between",
-  },
-
-  left: {
-    flex: 1,
-    gap: 6,
-  },
-  titleRow: {
-    flexDirection: "row",
     alignItems: "center",
     gap: 10,
-  },
-  right: {
-    width: 110,
-  },
-  itemName: {
-    color: tokens.colors.text,
-    fontFamily: tokens.typography.fontFamilyStrong,
-    letterSpacing: tokens.typography.letterSpacing,
-    fontSize: tokens.typography.fontSize,
-  },
-
-  recipeRow: {
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    backgroundColor: tokens.colors.card,
-    borderWidth: tokens.stroke.thin,
-    borderColor: tokens.colors.border,
-    borderRadius: 0,
-    gap: 6,
-  },
-  recipeName: {
-    color: tokens.colors.text,
-    fontFamily: tokens.typography.fontFamilyStrong,
-    letterSpacing: tokens.typography.letterSpacing,
-  },
-  recipeMeta: {
-    color: tokens.colors.muted,
-    fontFamily: tokens.typography.fontFamily,
-    letterSpacing: tokens.typography.letterSpacing,
-    fontSize: 12,
   },
 });

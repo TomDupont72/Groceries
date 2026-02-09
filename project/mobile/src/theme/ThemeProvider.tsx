@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from "react";
-import { createTheme, darkYellowTheme, Theme, ThemeMode, AccentColor } from "./theme";
+import { createTheme, Theme, ThemeMode, AccentColor } from "./theme";
 
 interface ThemeContextType {
   theme: Theme;

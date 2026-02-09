@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, Pressable, StyleSheet, ViewStyle, Animated } from "react-native";
+import { View, Text, Pressable, StyleSheet, ViewStyle } from "react-native";
 import { useTheme } from "./ThemeProvider";
 
 // SWITCH / TOGGLE
@@ -210,12 +210,7 @@ export function Slider({
       onValueChange(clampedValue);
     }
   };
-
-  const handlePress = (event: any) => {
-    const locationX = event.nativeEvent.locationX;
-    updateValue(locationX);
-  };
-
+  
   return (
     <View style={[styles.sliderContainer, style]}>
       {label && (
