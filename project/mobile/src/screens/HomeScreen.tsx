@@ -1,20 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { Text, View, StyleSheet, Alert } from "react-native";
-import { tokens } from "../theme/tokens";
-import { Card, RetroButton, RetroInput } from "../theme/components";
 import { supabase } from "../api/supabase";
-import { Screen } from "../theme/Screen";
 import * as Linking from "expo-linking";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useTheme, Button, Card, Input } from "../theme/index"
 
 type AuthState = "loggedOut" | "logIn" | "signUp" | "loggedIn";
 
 export default function HomeScreen({ navigation }: any) {
+  const { theme } = useTheme();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [authState, setAuthState] = useState<AuthState>("loggedOut");
   const [username, setUsername] = useState("");
-  const version = "1.3.0";
+  const version = "1.3.1";
   const [appVersion, setAppVersion] = useState("");
   const [appLink, setAppLink] = useState("");
 
@@ -148,188 +148,94 @@ export default function HomeScreen({ navigation }: any) {
   }, []);
 
   return (
-    <Screen style={{ paddingTop: tokens.spacing.xl * 2 }}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.bg }]}>
       {authState === "loggedIn" && (
         <View style={{ flex: 1 }}>
-          <View>
-            <Text style={styles.h1}>Bonjour {username || "👋"}</Text>
-
-            <Card style={{ gap: tokens.spacing.sm }}>
-              <RetroButton
-                title="Ajouter un ingredient"
-                onPress={() => navigation.navigate("AddIngredient")}
-              />
-
-              <RetroButton
-                title="Gérer les recettes"
-                onPress={() => navigation.navigate("Recipes")}
-              />
-
-              <RetroButton
-                title="Gérer les courses"
-                onPress={() => navigation.navigate("Groceries")}
-              />
-
-              <RetroButton
-                title="Faire les courses"
-                onPress={() => navigation.navigate("Buying")}
-              />
-
-              <RetroButton title="Se déconnecter" onPress={logout} />
+          <View style={styles.section}>
+            <Text style={{color: theme.colors.text, fontFamily: theme.fontFamily.mono.md, fontSize: theme.fontSize.xxl}}>Bonjour {username || "👋"}</Text>
+            <Card variant="outlined" padding="md" style={styles.section}>
+              <Button title="Ajouter un ingrédient" onPress={() => navigation.navigate("AddIngredient")} fullWidth/>
+              <Button title="Gérer les recettes" onPress={() => navigation.navigate("Recipes")} fullWidth/>
+              <Button title="Gérer les courses" onPress={() => navigation.navigate("Groceries")} fullWidth/>
+              <Button title="Faire les courses" onPress={() => navigation.navigate("Buying")} fullWidth/>
+              <Button title="Se déconnecter" onPress={logout} fullWidth/>
             </Card>
-
             {appVersion !== "" && appVersion !== version && (
-              <Text style={[styles.h2, styles.centered]}>
+              <Text style={[styles.centered, {color: theme.colors.text, fontFamily: theme.fontFamily.mono.sm, fontSize: theme.fontSize.sm}]}>
                 Vous êtes sur une ancienne version,{" "}
-                <Text style={styles.link} onPress={() => appLink && Linking.openURL(appLink)}>
-                  cliquez ici
-                </Text>{" "}
+                <Text style={styles.link} onPress={() => appLink && Linking.openURL(appLink)}>cliquez ici</Text>{" "}
                 pour mettre à jour.
               </Text>
             )}
           </View>
-
-          <Text style={styles.version}>v{version}</Text>
+          <Text style={[styles.version, {color: theme.colors.text, fontFamily: theme.fontFamily.mono.sm, fontSize: theme.fontSize.sm}]}>v{version}</Text>
         </View>
       )}
 
       {authState === "logIn" && (
-        <View style={{ paddingTop: tokens.spacing.xl }}>
-          <Text style={styles.h1}>Connexion</Text>
-          <Card style={{ gap: tokens.spacing.sm }}>
-            <RetroInput
-              value={email}
-              onChangeText={setEmail}
-              placeholder="Email"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-
-            <RetroInput
-              value={password}
-              onChangeText={setPassword}
-              placeholder="Mot de passe"
-              secureTextEntry
-              autoCapitalize="none"
-              autoCorrect={false}
-              textContentType="password"
-              autoComplete="password"
-              returnKeyType="done"
-            />
-
-            <RetroButton title="Se connecter" onPress={login} />
+        <View style={styles.section}>
+          <Text style={{color: theme.colors.text, fontFamily: theme.fontFamily.mono.md, fontSize: theme.fontSize.xxl}}>Connexion</Text>
+          <Card variant="outlined" padding="md" style={styles.section}>
+            <Input label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" containerStyle={{ marginBottom: theme.spacing.md }}/>
+            <Input label="Mot de passe" value={password} onChangeText={setPassword} secureTextEntry containerStyle={{ marginBottom: theme.spacing.md }}/>
+            <Button title="Se connecter" onPress={login} fullWidth/>
           </Card>
-
-          <Text style={[styles.h2, styles.centered]}>
-            Pas de compte ?{" "}
-            <Text style={styles.link} onPress={() => setAuthState("signUp")}>
-              S&apos;inscrire
-            </Text>
-          </Text>
         </View>
       )}
 
       {authState === "loggedOut" && (
-        <View style={{ paddingTop: tokens.spacing.xl }}>
-          <Text style={styles.h1}>Bienvenue</Text>
-
-          <Card style={{ gap: tokens.spacing.sm }}>
-            <RetroButton title="Se connecter" onPress={() => setAuthState("logIn")} />
-            <RetroButton title="S'inscrire" onPress={() => setAuthState("signUp")} />
+        <View style={styles.section}>
+          <Text style={{color: theme.colors.text, fontFamily: theme.fontFamily.mono.md, fontSize: theme.fontSize.xxl}}>Bienvenue</Text>
+          <Card variant="outlined" padding="md" style={styles.section}>
+            <Button title="Se connecter" onPress={() => setAuthState("logIn")} fullWidth/>
+            <Button title="S'inscrire" onPress={() => setAuthState("signUp")} fullWidth/>
           </Card>
         </View>
       )}
 
       {authState === "signUp" && (
-        <View style={{ paddingTop: tokens.spacing.xl }}>
-          <Text style={styles.h1}>Inscription</Text>
-          <Card style={{ gap: tokens.spacing.sm }}>
-            <RetroInput
-              value={username}
-              onChangeText={setUsername}
-              placeholder="Nom d'utilisateur"
-              autoCorrect={false}
-            />
-
-            <RetroInput
-              value={email}
-              onChangeText={setEmail}
-              placeholder="Email"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-
-            <RetroInput
-              value={password}
-              onChangeText={setPassword}
-              placeholder="Mot de passe"
-              secureTextEntry
-              autoCapitalize="none"
-              autoCorrect={false}
-              textContentType="password"
-              autoComplete="password"
-              returnKeyType="done"
-            />
-
-            <RetroInput
-              value={passwordConfirm}
-              onChangeText={setPasswordConfirm}
-              placeholder="Confirmer le mot de passe"
-              secureTextEntry
-              autoCapitalize="none"
-              autoCorrect={false}
-              textContentType="password"
-              autoComplete="password"
-              returnKeyType="done"
-            />
-
-            <RetroButton title="S'inscrire" onPress={signUp} />
+        <View style={styles.section}>
+          <Text style={{color: theme.colors.text, fontFamily: theme.fontFamily.mono.md, fontSize: theme.fontSize.xxl}}>Inscription</Text>
+          <Card variant="outlined" padding="md" style={styles.section}>
+            <Input label="Nom d'utilisateur" value={username} onChangeText={setUsername} autoCorrect={false} containerStyle={{ marginBottom: theme.spacing.md }}/>
+            <Input label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" containerStyle={{ marginBottom: theme.spacing.md }}/>
+            <Input label="Mot de passe" value={password} onChangeText={setPassword} secureTextEntry containerStyle={{ marginBottom: theme.spacing.md }}/>
+            <Input label="Confirmer le mot de passe" value={passwordConfirm} onChangeText={setPasswordConfirm} secureTextEntry containerStyle={{ marginBottom: theme.spacing.md }}/>
+            <Button title="S'inscrire'" onPress={signUp} fullWidth/>
           </Card>
-
-          <Text style={[styles.h2, styles.centered]}>
+          <Text style={[styles.centered, {color: theme.colors.text, fontFamily: theme.fontFamily.mono.sm, fontSize: theme.fontSize.sm}]}>
             Déjà un compte ?{" "}
-            <Text style={styles.link} onPress={() => setAuthState("logIn")}>
-              Se connecter
-            </Text>
+            <Text style={styles.link} onPress={() => setAuthState("logIn")}>Se connecter</Text>
           </Text>
         </View>
       )}
-    </Screen>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  h1: {
-    color: tokens.colors.text,
-    fontSize: tokens.typography.h1,
-    fontFamily: tokens.typography.fontFamilyStrong,
-    letterSpacing: tokens.typography.letterSpacing,
-    marginBottom: tokens.spacing.md,
+  safeArea: {
+    flex: 1,
+    padding: 18,
   },
-  h2: {
-    color: tokens.colors.muted,
-    fontFamily: tokens.typography.fontFamily,
-    letterSpacing: tokens.typography.letterSpacing,
-    fontSize: 12,
-    marginTop: tokens.spacing.md,
+  section: {
+    flexDirection: "column",
+    gap: 18,
+  },
+  version: {
+    opacity: 0.6,
+    marginTop: "auto",
+    textAlign: "right",
   },
   link: {
-    color: "#4da3ff",
+    color: "#0080FF",
     textDecorationLine: "underline",
-    fontFamily: tokens.typography.fontFamily,
-    letterSpacing: tokens.typography.letterSpacing,
-    fontSize: 12,
   },
+
   centered: {
     textAlign: "center",
   },
-  version: {
-    position: "absolute",
-    bottom: tokens.spacing.md,
-    right: tokens.spacing.sm,
-    color: tokens.colors.muted,
-    fontSize: tokens.typography.version ?? 12,
-    fontFamily: tokens.typography.fontFamily,
-    letterSpacing: tokens.typography.letterSpacing,
+  sectionTitle: {
+    marginBottom: 16,
   },
 });

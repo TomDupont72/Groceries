@@ -1,11 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Text, StyleSheet, Alert } from "react-native";
+import { Text, StyleSheet, Alert, View } from "react-native";
 
 import { supabase } from "../api/supabase";
-import { tokens } from "../theme/tokens";
-import { Card, RetroButton, RetroInput } from "../theme/components";
-import { Screen } from "../theme/Screen";
-import ComboBox from "../components/ComboBox";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useTheme, Input, Card, ComboBox, Button } from "../theme/index"
+
 
 type ZoneRow = {
   id: number;
@@ -13,6 +12,7 @@ type ZoneRow = {
 };
 
 export default function AddIngredientScreen() {
+  const { theme } = useTheme();
   const [name, setName] = useState("");
   const [unit, setUnit] = useState("");
   const [zoneId, setZoneId] = useState<number>();
@@ -20,13 +20,10 @@ export default function AddIngredientScreen() {
   const [zoneData, setZoneData] = useState<ZoneRow[]>([]);
   const [zoneName, setZoneName] = useState("");
 
-  const zonesDict = useMemo(() => {
-    const out: { [key: string]: string } = {};
-    for (const z of zoneData) {
-      out[z.name] = String(z.id);
-    }
-    return out;
-  }, [zoneData]);
+  const zoneOptions = useMemo(
+    () => (zoneData ?? []).map(z => ({ label: z.name, value: String(z.id) })),
+    [zoneData]
+  );
 
   const submit = async () => {
     if (loading) return;
@@ -99,106 +96,27 @@ export default function AddIngredientScreen() {
   }, []);
 
   return (
-    <Screen style={{ paddingTop: tokens.spacing.xl * 2, gap: tokens.spacing.lg }}>
-      <Text style={styles.h1}>Ajouter un ingrédient</Text>
-
-      <Card style={{ gap: tokens.spacing.sm }}>
-        <RetroInput value={name} onChangeText={setName} placeholder="Nom de l'ingrédient" />
-
-        <RetroInput value={unit} onChangeText={setUnit} placeholder="Unité de l'ingrédient" />
-
-        <ComboBox
-          dict={zonesDict}
-          value={zoneName}
-          onChange={setZoneName}
-          onPick={(it) => {
-            setZoneId(Number(it.cat));
-          }}
-          placeholder="Choisir une zone"
-          max={6}
-        />
-
-        <RetroButton title={loading ? "Chargement..." : "Ajouter"} onPress={submit} />
-      </Card>
-    </Screen>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.bg }]}>
+      <View style={styles.section}>
+        <Text style={{color: theme.colors.text, fontFamily: theme.fontFamily.mono.md, fontSize: theme.fontSize.xxl}}>Ajouter un ingrédient</Text>
+        <Card variant="outlined" padding="md" style={styles.section}>
+          <Input label="Nom de l'ingrédient" value={name} onChangeText={setName} containerStyle={{ marginBottom: theme.spacing.md }}/>
+          <Input label="Unité de l'ingrédient" value={unit} onChangeText={setUnit} autoCapitalize="none" containerStyle={{ marginBottom: theme.spacing.md }}/>
+          <ComboBox label="Choisir une zone" value={zoneName} onChange={setZoneName} options={zoneOptions} onSelectItem={(it) => setZoneId(Number(it.value))} containerStyle={{ marginBottom: theme.spacing.md }} />
+          <Button title={loading ? "Chargement..." : "Ajouter"} onPress={submit} fullWidth/>
+        </Card>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  page: {
+  safeArea: {
     flex: 1,
-    backgroundColor: tokens.colors.bg,
-    padding: tokens.spacing.lg,
+    padding: 18,
   },
-  h1: {
-    color: tokens.colors.text,
-    fontSize: tokens.typography.h1,
-    fontFamily: tokens.typography.fontFamilyStrong,
-    letterSpacing: tokens.typography.letterSpacing,
-    marginBottom: tokens.spacing.md,
-  },
-  h2: {
-    color: tokens.colors.text,
-    fontSize: 16,
-    fontWeight: "900",
-    letterSpacing: 0.5,
-  },
-  muted: {
-    color: tokens.colors.text,
-    opacity: 0.7,
-  },
-  mutedSmall: {
-    color: tokens.colors.text,
-    opacity: 0.6,
-    fontSize: 12,
-  },
-
-  ingRow: {
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.15)",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 10,
-  },
-  ingRowSelected: {
-    borderColor: "rgba(255,255,255,0.5)",
-  },
-  ingLeft: {
-    flex: 1,
-    gap: 4,
-  },
-  ingRight: {
-    width: 110,
-  },
-  ingName: {
-    color: tokens.colors.text,
-    fontWeight: "800",
-  },
-  ingMeta: {
-    color: tokens.colors.text,
-    opacity: 0.7,
-    fontSize: 12,
-  },
-
-  rowBetween: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  recipeRow: {
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.15)",
-    gap: 4,
-  },
-  recipeName: {
-    color: tokens.colors.text,
-    fontWeight: "900",
+  section: {
+    flexDirection: "column",
+    gap: 18,
   },
 });
