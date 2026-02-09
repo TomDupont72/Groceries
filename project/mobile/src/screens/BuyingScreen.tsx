@@ -2,8 +2,8 @@ import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { View, Text, StyleSheet, Alert, ScrollView } from "react-native";
 
 import { supabase } from "../api/supabase";
-import { tokens } from "../theme/tokens";
-import { Card, RetroButton, RetroRow, RetroCheckbox } from "../theme/components";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useTheme, Card, List, ListItem, ListItemText, Checkbox, Button } from "../theme/index"
 
 type GroceryRecipeRow = {
   id: number;
@@ -46,6 +46,8 @@ type BuyItem = {
 };
 
 export default function BuyingScreen() {
+  const { theme } = useTheme();
+
   const [loading, setLoading] = useState(false);
 
   const [items, setItems] = useState<BuyItem[]>([]);
@@ -284,124 +286,44 @@ export default function BuyingScreen() {
     }
   };
 
-  const formatQty = (qty: number) => {
-    if (Number.isInteger(qty)) return String(qty);
-    return qty.toFixed(2);
-  };
-
   return (
-    <ScrollView
-      style={styles.page}
-      contentContainerStyle={{
-        gap: tokens.spacing.lg,
-        paddingBottom: tokens.spacing.xl * 3,
-        paddingTop: tokens.spacing.xl,
-      }}
-      keyboardShouldPersistTaps="handled"
-    >
-      <View style={styles.headerRow}>
-        <Text style={styles.h1}>Courses</Text>
-        <RetroButton title={loading ? "..." : "Rafraîchir"} onPress={loadAll} />
-      </View>
-
-      {items.length === 0 ? (
-        <Card>
-          <Text style={styles.muted}>
-            Rien à acheter. Ajouter des recettes à vos courses d&apos;abord.
-          </Text>
-        </Card>
-      ) : (
-        grouped.map((section) => (
-          <Card key={section.zoneName} style={{ gap: tokens.spacing.sm }}>
-            <Text style={styles.zoneTitle}>{section.zoneName}</Text>
-
-            <View style={{ gap: tokens.spacing.xs }}>
-              {section.items.map((it) => (
-                <RetroRow
-                  key={String(it.ingredientId)}
-                  selected={it.checked}
-                  onPress={() => toggleCheck(it.ingredientId)}
-                >
-                  <View style={styles.itemLeft}>
-                    <View style={styles.itemTitleRow}>
-                      <RetroCheckbox checked={it.checked} />
-                      <Text style={styles.itemName}>{it.name}</Text>
-                    </View>
-
-                    <Text style={styles.itemMeta}>
-                      Quantité: {formatQty(it.total)}
-                      {it.unit ? ` ${it.unit}` : ""}
-                    </Text>
-                  </View>
-
-                  <Text style={styles.itemMetaRight}>{it.checked ? "OK" : ""}</Text>
-                </RetroRow>
-              ))}
-            </View>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.bg }]}>
+      <ScrollView contentContainerStyle={[styles.section, { paddingBottom: theme.spacing.xl * 3 }]}>
+        <View style={styles.rowBetween}>
+          <Text style={{color: theme.colors.text, fontFamily: theme.fontFamily.mono.md, fontSize: theme.fontSize.xxl}}>Courses</Text>
+          <Button title="Rafraîchir" onPress={loadAll} loading={loading}/>
+        </View>
+        {grouped.map((section) => (
+          <Card key={section.zoneName} variant="outlined" padding="md" style={styles.section}>
+            <List header={section.zoneName} columns={[20, "flex", 70]}>
+            {section.items.map((item) => (
+              <ListItem key={item.ingredientId}>
+                <Checkbox checked={item.checked} onPress={() => toggleCheck(item.ingredientId)}/>
+                <ListItemText>{item.name}</ListItemText>
+                <ListItemText style={{alignSelf: "center"}}>{item.total} {item.unit}</ListItemText>
+              </ListItem>
+            ))}
+            </List>
           </Card>
-        ))
-      )}
-    </ScrollView>
+        ))}
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  page: {
+  safeArea: {
     flex: 1,
-    backgroundColor: tokens.colors.bg,
-    padding: tokens.spacing.lg,
+    padding: 18,
   },
-  headerRow: {
+  section: {
+    flexDirection: "column",
+    gap: 18,
+  },
+  rowBetween: {
     flexDirection: "row",
-    alignItems: "center",
     justifyContent: "space-between",
-  },
-
-  h1: {
-    color: tokens.colors.text,
-    fontSize: tokens.typography.h1,
-    fontFamily: tokens.typography.fontFamilyStrong,
-    letterSpacing: tokens.typography.letterSpacing,
-  },
-
-  muted: {
-    color: tokens.colors.muted,
-    fontFamily: tokens.typography.fontFamily,
-    letterSpacing: tokens.typography.letterSpacing,
-  },
-
-  zoneTitle: {
-    color: tokens.colors.text,
-    fontSize: tokens.typography.h2,
-    fontFamily: tokens.typography.fontFamilyStrong,
-    letterSpacing: tokens.typography.letterSpacing,
-  },
-
-  itemLeft: {
-    flex: 1,
-    gap: 6,
-  },
-  itemTitleRow: {
-    flexDirection: "row",
     alignItems: "center",
     gap: 10,
-  },
-  itemName: {
-    color: tokens.colors.text,
-    fontFamily: tokens.typography.fontFamilyStrong,
-    letterSpacing: tokens.typography.letterSpacing,
-    fontSize: tokens.typography.fontSize,
-  },
-  itemMeta: {
-    color: tokens.colors.muted,
-    fontFamily: tokens.typography.fontFamily,
-    letterSpacing: tokens.typography.letterSpacing,
-    fontSize: 12,
-  },
-  itemMetaRight: {
-    color: tokens.colors.muted,
-    fontFamily: tokens.typography.fontFamilyStrong,
-    letterSpacing: tokens.typography.letterSpacing,
-    fontSize: 12,
   },
 });

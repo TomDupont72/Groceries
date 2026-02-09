@@ -6,6 +6,7 @@ import AddIngredientScreen from "../screens/AddIngredientScreen";
 import GroceriesScreen from "../screens/GroceriesScreen";
 import RecipesScreen from "../screens/RecipesScreen";
 import BuyingScreen from "../screens/BuyingScreen";
+import DemoContent from "../screens/DemoScreen"
 
 const Stack = createNativeStackNavigator();
 
@@ -17,6 +18,7 @@ export default function RootNavigator() {
       <Stack.Screen name="Groceries" component={GroceriesScreen} />
       <Stack.Screen name="Recipes" component={RecipesScreen} />
       <Stack.Screen name="Buying" component={BuyingScreen} />
+      <Stack.Screen name="Demo" component={DemoContent} />
     </Stack.Navigator>
   );
 }
