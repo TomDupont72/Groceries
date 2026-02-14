@@ -30,7 +30,7 @@ type IngredientRow = {
 type GroceryIngredientRow = {
   id: number;
   ingredientId: number;
-  check: boolean;
+  checked: boolean;
   userId: string;
 };
 
@@ -182,7 +182,7 @@ export default function BuyingScreen() {
 
       const { data: giData, error: giError } = await supabase
         .from("GroceryIngredient")
-        .select("id,ingredientId,check,userId")
+        .select("id,ingredientId,checked,userId")
         .in("ingredientId", ingredientIds);
 
       if (giError) throw giError;
@@ -203,7 +203,7 @@ export default function BuyingScreen() {
             zoneId: ing.zoneId,
             zoneName: ing.zone?.name ?? "Autres",
             total,
-            checked: chk?.check ?? false,
+            checked: chk?.checked ?? false,
             groceryIngredientId: chk?.id,
           } as BuyItem;
         })
