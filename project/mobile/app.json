@@ -4,7 +4,7 @@
     "slug": "mobile-expo",
     "icon": "./assets/grocery.png",
     "version": "1.4.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "scheme": "mobileexpo",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -22,8 +22,7 @@
       "versionCode": 1
     },
     "web": {
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "output": "static"
     },
     "plugins": [
       "expo-font"
