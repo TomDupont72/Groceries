@@ -7,8 +7,8 @@ interface ListProps {
   children: React.ReactNode;
   header?: string | React.ReactNode;
   headerRight?: React.ReactNode;
-  columns?: (number | "flex")[]; // [40, "flex", 80, 60] = checkbox, nom, quantité, unité
-  columnHeaders?: (string | React.ReactNode)[]; // ["", "Nom", "Qté", "Unité"]
+  columns?: Array<number | "flex">; // [40, "flex", 80, 60] = checkbox, nom, quantité, unité
+  columnHeaders?: Array<string | React.ReactNode>; // ["", "Nom", "Qté", "Unité"]
   style?: ViewStyle;
 }
 
@@ -113,7 +113,7 @@ interface ListItemProps {
   onPress?: () => void;
   selected?: boolean;
   disabled?: boolean;
-  columns?: (number | "flex")[]; // Passed from List parent
+  columns?: Array<number | "flex">; // Passed from List parent
   style?: ViewStyle;
 }
 
@@ -225,6 +225,7 @@ interface ListItemInputProps {
   placeholder?: string;
   keyboardType?: "default" | "numeric" | "email-address";
   style?: TextStyle;
+  disabled?: boolean;
 }
 
 export function ListItemInput({
@@ -233,6 +234,7 @@ export function ListItemInput({
   placeholder,
   keyboardType = "default",
   style,
+  disabled = false,
 }: ListItemInputProps) {
   const { theme } = useTheme();
 
@@ -243,6 +245,7 @@ export function ListItemInput({
       placeholder={placeholder}
       placeholderTextColor={theme.colors.textMuted}
       keyboardType={keyboardType}
+      editable={!disabled}
       style={[
         styles.itemInput,
         {
@@ -256,6 +259,7 @@ export function ListItemInput({
           paddingVertical: theme.spacing.xs,
           paddingHorizontal: theme.spacing.sm,
         },
+        disabled && { opacity: 0.5 },
         style,
       ]}
     />
