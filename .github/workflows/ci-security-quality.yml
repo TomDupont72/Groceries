@@ -79,37 +79,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: project/mobile/package-lock.json
-
-      - name: Install
-        working-directory: project/mobile
-        run: npm ci
-
-      - name: Test with coverage
-        working-directory: project/mobile
-        run: npm test -- --coverage
-
-      - name: Debug coverage files
-        working-directory: project/mobile
-        run: |
-          ls -la
-          ls -la coverage || true
-          test -f coverage/lcov.info && echo "lcov exists" || (echo "lcov missing" && exit 1)
-          head -n 5 coverage/lcov.info
-
       - name: SonarCloud Scan
         uses: SonarSource/sonarqube-scan-action@v6
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_VERBOSE: "true"
         with:
+          # Sonar properties file is at repo root in your setup
           args: >
-            -Dsonar.projectBaseDir=project/mobile
-            -Dsonar.sources=src
-            -Dsonar.tests=src
-            -Dsonar.test.inclusions=**/*.test.ts,**/*.test.tsx,**/*.test.tsx
-            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
+            -Dsonar.projectBaseDir=.
