@@ -85,6 +85,8 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           args: >
+            -Dsonar.organization=tomdupont72
+            -Dsonar.projectKey=TomDupont72_Groceries
             -Dsonar.projectBaseDir=project/mobile
             -Dsonar.sources=src
             -Dsonar.tests=src
