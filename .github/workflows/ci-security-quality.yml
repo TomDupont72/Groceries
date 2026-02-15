@@ -84,6 +84,13 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
-          # Sonar properties file is at repo root in your setup
           args: >
-            -Dsonar.projectBaseDir=.
+            -Dsonar.organization=tomdupont72
+            -Dsonar.projectKey=TomDupont72_Groceries
+            -Dsonar.projectBaseDir=project/mobile
+            -Dsonar.sources=src
+            -Dsonar.tests=src
+            -Dsonar.test.inclusions=**/*.test.ts,**/*.test.tsx
+            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
+            -Dsonar.coverage.exclusions=**/*.test.ts,**/*.test.tsx,**/src/screens/**,**/src/theme/**,**/src/navigation/**,**/src/api/**
+            -Dsonar.cpd.exclusions=**/*.test.ts,**/*.test.tsx
