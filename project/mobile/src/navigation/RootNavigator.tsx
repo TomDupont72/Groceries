@@ -6,7 +6,7 @@ import AddIngredientScreen from "../screens/AddIngredientScreen";
 import GroceriesScreen from "../screens/GroceriesScreen";
 import RecipesScreen from "../screens/RecipesScreen";
 import BuyingScreen from "../screens/BuyingScreen";
-import DemoContent from "../screens/DemoScreen"
+import DemoContent from "../screens/DemoScreen";
 
 const Stack = createNativeStackNavigator();
 

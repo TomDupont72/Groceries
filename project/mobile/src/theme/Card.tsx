@@ -38,11 +38,7 @@ export function Card({
     return (
       <Pressable
         onPress={onPress}
-        style={({ pressed }) => [
-          cardStyle,
-          pressed && { opacity: 0.8 },
-          style,
-        ]}
+        style={({ pressed }) => [cardStyle, pressed && { opacity: 0.8 }, style]}
       >
         {children}
       </Pressable>
@@ -51,4 +47,3 @@ export function Card({
 
   return <View style={[cardStyle, style]}>{children}</View>;
 }
-

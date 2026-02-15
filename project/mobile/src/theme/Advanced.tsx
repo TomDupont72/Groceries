@@ -11,13 +11,7 @@ interface SwitchProps {
   style?: ViewStyle;
 }
 
-export function Switch({
-  value,
-  onValueChange,
-  label,
-  disabled = false,
-  style,
-}: SwitchProps) {
+export function Switch({ value, onValueChange, label, disabled = false, style }: SwitchProps) {
   const { theme } = useTheme();
 
   return (
@@ -40,9 +34,7 @@ export function Switch({
           style={[
             styles.switchThumb,
             {
-              backgroundColor: value
-                ? theme.colors.accentContrast
-                : theme.colors.textMuted,
+              backgroundColor: value ? theme.colors.accentContrast : theme.colors.textMuted,
               transform: [{ translateX: value ? 20 : 0 }],
               borderRadius: theme.radius.full,
             },
@@ -120,18 +112,13 @@ export function RadioGroup({
             key={option.value}
             onPress={() => !disabled && onChange(option.value)}
             disabled={disabled}
-            style={[
-              styles.radioOption,
-              { opacity: disabled ? 0.5 : 1 },
-            ]}
+            style={[styles.radioOption, { opacity: disabled ? 0.5 : 1 }]}
           >
             <View
               style={[
                 styles.radioCircle,
                 {
-                  borderColor: isSelected
-                    ? theme.colors.accent
-                    : theme.colors.border,
+                  borderColor: isSelected ? theme.colors.accent : theme.colors.border,
                   borderWidth: theme.borderWidth.default,
                   borderRadius: theme.radius.full,
                 },
@@ -205,12 +192,12 @@ export function Slider({
     const newValue = min + (locationX / trackWidth) * (max - min);
     const steppedValue = Math.round(newValue / step) * step;
     const clampedValue = Math.max(min, Math.min(max, steppedValue));
-    
-    if (!isNaN(clampedValue)) {
+
+    if (!Number.isNaN(clampedValue)) {
       onValueChange(clampedValue);
     }
   };
-  
+
   return (
     <View style={[styles.sliderContainer, style]}>
       {label && (

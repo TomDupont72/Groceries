@@ -1,52 +1,116 @@
 import React, { useState } from "react";
 import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useTheme, Card, Input, List, ListItem, ListItemInput, ListItemText, Checkbox, Button, Badge } from "../theme/index"
+import {
+  useTheme,
+  Card,
+  Input,
+  List,
+  ListItem,
+  ListItemInput,
+  ListItemText,
+  Checkbox,
+  Button,
+  Badge,
+  Loading,
+} from "../theme/index";
 import { useRecipes } from "../hooks/useRecipes";
-import LottieView from "lottie-react-native";
 
 export default function RecipesScreen() {
-  const { loadingPage, loadingRefresh, loadingAddRecipe, ingredientData, selectedIngredients, setQuantity, toggleIngredient, submit, loadAll, recipeData, errorMsg } = useRecipes();
+  const {
+    loadingPage,
+    loadingRefresh,
+    loadingAddRecipe,
+    ingredientData,
+    selectedIngredients,
+    setQuantity,
+    toggleIngredient,
+    submit,
+    loadAll,
+    recipeData,
+    errorMsg,
+  } = useRecipes();
   const { theme } = useTheme();
   const [recipeName, setRecipeName] = useState("");
 
-  if (loadingPage) {
-      return (
-        <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.bg }]}>
-          <View style={styles.center}>
-            <LottieView source={theme.colors.bg === "#0B0C10" ? require("../../assets/loadingWhite.json") : require("../../assets/loadingBlack.json")} autoPlay loop style={{ width: 200, height: 200 }}/>
-          </View>
-        </SafeAreaView>
-      )
-    }
+  if (loadingPage) return <Loading />;
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.bg }]}>
       <ScrollView contentContainerStyle={[styles.section, { paddingBottom: theme.spacing.xl * 3 }]}>
-        <Text style={{color: theme.colors.text, fontFamily: theme.fontFamily.mono.md, fontSize: theme.fontSize.xxl}}>Gérer les recettes</Text>
+        <Text
+          style={{
+            color: theme.colors.text,
+            fontFamily: theme.fontFamily.mono.md,
+            fontSize: theme.fontSize.xxl,
+          }}
+        >
+          Gérer les recettes
+        </Text>
         <Card variant="outlined" padding="md" style={styles.section}>
-          <Input label="Nom de la recette" value={recipeName} onChangeText={setRecipeName} containerStyle={{ marginBottom: theme.spacing.md }}/>
+          <Input
+            label="Nom de la recette"
+            value={recipeName}
+            onChangeText={setRecipeName}
+            containerStyle={{ marginBottom: theme.spacing.md }}
+          />
           <List header="Ingredients" columns={[20, "flex", 60, 65]}>
             {ingredientData.map((item) => (
               <ListItem key={item.id}>
-                <Checkbox checked={item.id in selectedIngredients} onPress={() => toggleIngredient(item.id)}/>
+                <Checkbox
+                  checked={item.id in selectedIngredients}
+                  onPress={() => toggleIngredient(item.id)}
+                />
                 <ListItemText>{item.name}</ListItemText>
-                <ListItemInput value={selectedIngredients[item.id]} onChangeText={(txt) => setQuantity(item.id, txt)} placeholder="Qté" keyboardType="numeric" disabled={!(item.id in selectedIngredients)}/>
+                <ListItemInput
+                  value={selectedIngredients[item.id]}
+                  onChangeText={(txt) => setQuantity(item.id, txt)}
+                  placeholder="Qté"
+                  keyboardType="numeric"
+                  disabled={!(item.id in selectedIngredients)}
+                />
                 <ListItemText variant="muted">{item.unit}</ListItemText>
               </ListItem>
             ))}
           </List>
           {errorMsg ? (
             <View style={styles.errorRow}>
-              <Badge variant="error" style={{ alignSelf: "center" }}>Erreur</Badge>
-              <Text style={[styles.errorText, {flex: 1, color: theme.colors.text, fontFamily: theme.fontFamily.mono.md, fontSize: theme.fontSize.md}]}>{errorMsg}</Text>
+              <Badge variant="error" style={{ alignSelf: "center" }}>
+                Erreur
+              </Badge>
+              <Text
+                style={[
+                  styles.errorText,
+                  {
+                    flex: 1,
+                    color: theme.colors.text,
+                    fontFamily: theme.fontFamily.mono.md,
+                    fontSize: theme.fontSize.md,
+                  },
+                ]}
+              >
+                {errorMsg}
+              </Text>
             </View>
           ) : null}
-          <Button title="Ajouter une recette" onPress={() => submit(recipeName)} fullWidth loading={loadingAddRecipe}/>
+          <Button
+            title="Ajouter une recette"
+            onPress={() => submit(recipeName)}
+            fullWidth
+            loading={loadingAddRecipe}
+          />
         </Card>
         <View style={styles.rowBetween}>
-          <Text style={{color: theme.colors.text, fontFamily: theme.fontFamily.mono.md, fontSize: theme.fontSize.xxl}}>Mes recettes</Text>
-          <Button title="Rafraîchir" onPress={() => loadAll("refresh")} loading={loadingRefresh}/>
+          <Text
+            style={{
+              color: theme.colors.text,
+              fontFamily: theme.fontFamily.mono.md,
+              fontSize: theme.fontSize.xxl,
+            }}
+          >
+            Mes recettes
+          </Text>
+          <Button title="Rafraîchir" onPress={() => loadAll("refresh")} loading={loadingRefresh} />
         </View>
         <Card variant="outlined" padding="md" style={styles.section}>
           <List header="Recettes" columns={["flex"]}>
@@ -78,9 +142,9 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   center: {
-     flex: 1, 
-     justifyContent: "center", 
-     alignItems: "center",
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   errorRow: {
     flexDirection: "row",

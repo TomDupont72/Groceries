@@ -53,9 +53,7 @@ export function Tabs({ tabs, activeTab, onTabChange, style }: TabsProps) {
                 {
                   color: isActive ? theme.colors.accent : theme.colors.textSecondary,
                   fontSize: theme.fontSize.base,
-                  fontFamily: isActive
-                    ? theme.fontFamily.mono.md
-                    : theme.fontFamily.mono.sm,
+                  fontFamily: isActive ? theme.fontFamily.mono.md : theme.fontFamily.mono.sm,
                 },
               ]}
             >
