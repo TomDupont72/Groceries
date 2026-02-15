@@ -9,12 +9,7 @@ interface BadgeProps {
   style?: ViewStyle;
 }
 
-export function Badge({
-  children,
-  variant = "default",
-  size = "md",
-  style,
-}: BadgeProps) {
+export function Badge({ children, variant = "default", size = "md", style }: BadgeProps) {
   const { theme } = useTheme();
 
   const sizeStyles = {
@@ -91,10 +86,7 @@ export function Badge({
           styles.badgeText,
           {
             color: variantStyle.text,
-            fontFamily:
-                        size === "sm"
-                        ? theme.fontFamily.mono.sm
-                        : theme.fontFamily.mono.md,
+            fontFamily: size === "sm" ? theme.fontFamily.mono.sm : theme.fontFamily.mono.md,
             fontWeight: theme.fontWeight.semibold,
           },
         ]}

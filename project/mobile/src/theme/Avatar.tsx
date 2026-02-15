@@ -94,14 +94,7 @@ interface UserRowProps {
   style?: ViewStyle;
 }
 
-export function UserRow({
-  name,
-  email,
-  avatar,
-  badge,
-  onPress,
-  style,
-}: UserRowProps) {
+export function UserRow({ name, email, avatar, badge, onPress, style }: UserRowProps) {
   const { theme } = useTheme();
 
   const content = (
@@ -139,7 +132,7 @@ export function UserRow({
               styles.userEmail,
               {
                 color: theme.colors.textSecondary,
-                fontFamily: theme.fontFamily.mono.sm
+                fontFamily: theme.fontFamily.mono.sm,
               },
             ]}
           >
@@ -158,10 +151,7 @@ export function UserRow({
 
   if (onPress) {
     return (
-      <Pressable
-        onPress={onPress}
-        style={({ pressed }) => [pressed && styles.pressed]}
-      >
+      <Pressable onPress={onPress} style={({ pressed }) => [pressed && styles.pressed]}>
         {content}
       </Pressable>
     );

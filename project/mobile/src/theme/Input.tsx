@@ -81,19 +81,12 @@ export function Input({
         />
 
         {secureTextEntry && !disabled && (
-          <Pressable
-            onPress={() => setShowPassword(!showPassword)}
-            style={styles.rightIcon}
-          >
-            <Text style={{ fontSize: 18 }}>
-              {showPassword ? "👁️" : "👁️‍🗨️"}
-            </Text>
+          <Pressable onPress={() => setShowPassword(!showPassword)} style={styles.rightIcon}>
+            <Text style={{ fontSize: 18 }}>{showPassword ? "👁️" : "👁️‍🗨️"}</Text>
           </Pressable>
         )}
 
-        {!secureTextEntry && rightIcon && (
-          <View style={styles.rightIcon}>{rightIcon}</View>
-        )}
+        {!secureTextEntry && rightIcon && <View style={styles.rightIcon}>{rightIcon}</View>}
       </View>
 
       {error && (

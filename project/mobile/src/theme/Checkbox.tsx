@@ -10,13 +10,7 @@ interface CheckboxProps {
   style?: ViewStyle;
 }
 
-export function Checkbox({
-  checked,
-  onPress,
-  label,
-  disabled = false,
-  style,
-}: CheckboxProps) {
+export function Checkbox({ checked, onPress, label, disabled = false, style }: CheckboxProps) {
   const { theme } = useTheme();
 
   const content = (
@@ -33,14 +27,7 @@ export function Checkbox({
         ]}
       >
         {checked && (
-          <Text
-            style={[
-              styles.checkmark,
-              { color: theme.colors.accentContrast },
-            ]}
-          >
-            ✓
-          </Text>
+          <Text style={[styles.checkmark, { color: theme.colors.accentContrast }]}>✓</Text>
         )}
       </View>
 
@@ -65,10 +52,7 @@ export function Checkbox({
       <Pressable
         onPress={onPress}
         disabled={disabled}
-        style={({ pressed }) => [
-          pressed && styles.pressed,
-          disabled && styles.disabled,
-        ]}
+        style={({ pressed }) => [pressed && styles.pressed, disabled && styles.disabled]}
       >
         {content}
       </Pressable>
