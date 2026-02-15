@@ -4,7 +4,7 @@ export const baseTokens = {
     none: 0,
     sm: 0,
     md: 0,
-    lg: 4,      // Very subtle, only for cards
+    lg: 4, // Very subtle, only for cards
     xl: 0,
     full: 9999,
   },
@@ -29,11 +29,11 @@ export const baseTokens = {
   },
   fontFamily: {
     mono: {
-        sm: "DMMono_400Regular",
-        md: "DMMono_500Medium",
-        lg: "DMMono_500Medium",
+      sm: "DMMono_400Regular",
+      md: "DMMono_500Medium",
+      lg: "DMMono_500Medium",
     },
-    },
+  },
   fontWeight: {
     normal: "400" as const,
     medium: "500" as const,
@@ -41,12 +41,12 @@ export const baseTokens = {
     bold: "700" as const,
   },
   borderWidth: {
-    thin: 2,        // Thick borders like in image
+    thin: 2, // Thick borders like in image
     default: 2,
     thick: 3,
   },
   shadow: {
-    offset: 4,      // Hard shadow offset
+    offset: 4, // Hard shadow offset
   },
 } as const;
 
@@ -100,14 +100,14 @@ export const accentColors = {
 export const themes = {
   dark: {
     // Backgrounds
-    bg: "#0B0C10",         // charbon
+    bg: "#0B0C10", // charbon
     bgElevated: "#12141A", // surface légèrement plus claire
-    bgCard: "#141720",     // cards
+    bgCard: "#141720", // cards
     bgHover: "#1B1F2A",
     bgInput: "#0F1118",
 
     // Text
-    text: "#F3F4F6",         // quasi blanc
+    text: "#F3F4F6", // quasi blanc
     textSecondary: "#C7CAD1",
     textMuted: "#8B909B",
 
@@ -153,10 +153,7 @@ export const themes = {
 } as const;
 
 // Create a complete theme
-export const createTheme = (
-  mode: "dark" | "light",
-  accentColor: keyof typeof accentColors
-) => {
+export const createTheme = (mode: "dark" | "light", accentColor: keyof typeof accentColors) => {
   const baseColors = themes[mode];
   const accent = accentColors[accentColor];
 

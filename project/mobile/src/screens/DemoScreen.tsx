@@ -25,8 +25,7 @@ import {
 } from "../theme/index";
 
 function DemoContent() {
-  const { theme, mode, accentColor, setTheme, toggleMode } =
-    useTheme();
+  const { theme, mode, accentColor, setTheme, toggleMode } = useTheme();
 
   // Form states
   const [email, setEmail] = useState("");
@@ -75,9 +74,7 @@ function DemoContent() {
 
   const updateIngredient = (id: string, field: string, value: any) => {
     setIngredients((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, [field]: value } : item
-      )
+      prev.map((item) => (item.id === id ? { ...item, [field]: value } : item)),
     );
   };
 
@@ -94,9 +91,7 @@ function DemoContent() {
   };
 
   return (
-    <SafeAreaView
-      style={[styles.safeArea, { backgroundColor: theme.colors.bg }]}
-    >
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.bg }]}>
       <ScrollView
         style={[styles.container, { backgroundColor: theme.colors.bg }]}
         contentContainerStyle={styles.content}
@@ -160,16 +155,9 @@ function DemoContent() {
           />
 
           <View style={{ marginTop: theme.spacing.md }}>
-            <Button
-              title="Toggle Dark/Light"
-              onPress={toggleMode}
-              variant="outline"
-              fullWidth
-            />
+            <Button title="Toggle Dark/Light" onPress={toggleMode} variant="outline" fullWidth />
           </View>
         </Card>
-
-        
 
         {/* Buttons */}
         <View style={styles.section}>
@@ -198,12 +186,7 @@ function DemoContent() {
             <Button title="Large" onPress={() => {}} size="lg" />
           </View>
 
-          <Button
-            title="Full Width"
-            onPress={() => {}}
-            variant="filled"
-            fullWidth
-          />
+          <Button title="Full Width" onPress={() => {}} variant="filled" fullWidth />
 
           <View style={styles.buttonRow}>
             <Button title="Loading" onPress={() => {}} loading />
@@ -275,18 +258,8 @@ function DemoContent() {
           />
 
           <View style={styles.buttonRow}>
-            <Button
-              title="Github"
-              onPress={() => {}}
-              variant="outline"
-              style={{ flex: 1 }}
-            />
-            <Button
-              title="Google"
-              onPress={() => {}}
-              variant="outline"
-              style={{ flex: 1 }}
-            />
+            <Button title="Github" onPress={() => {}} variant="outline" style={{ flex: 1 }} />
+            <Button title="Google" onPress={() => {}} variant="outline" style={{ flex: 1 }} />
           </View>
         </Card>
 
@@ -412,11 +385,7 @@ function DemoContent() {
             >
               Advanced React Patterns
             </Text>
-            <Badge
-              variant="accent"
-              size="sm"
-              style={{ marginVertical: theme.spacing.sm }}
-            >
+            <Badge variant="accent" size="sm" style={{ marginVertical: theme.spacing.sm }}>
               $49.99
             </Badge>
             <Text
@@ -428,8 +397,7 @@ function DemoContent() {
                 },
               ]}
             >
-              Master advanced React patterns and build scalable applications with
-              best practices.
+              Master advanced React patterns and build scalable applications with best practices.
             </Text>
             <Button title="Enroll Now →" onPress={() => {}} variant="filled" />
           </Card>
@@ -453,7 +421,7 @@ function DemoContent() {
                 {
                   color: theme.colors.textSecondary,
                   fontFamily: theme.fontFamily.mono.sm,
-                }
+                },
               ]}
             >
               This card has a shadow and no border.
@@ -461,12 +429,28 @@ function DemoContent() {
           </Card>
         </View>
 
-        <ComboBox label="Fruit" value={comboValue} onChange={setComboValue} options={comboOptions} containerStyle={{ marginBottom: 16 }} />
-        <Switch value={switchValue} onValueChange={setSwitchValue} label="Notifications" style={{ marginBottom: 16 }} />
-        <RadioGroup options={radioOptions} value={radioValue} onChange={setRadioValue} style={{ marginBottom: 16 }} />
+        <ComboBox
+          label="Fruit"
+          value={comboValue}
+          onChange={setComboValue}
+          options={comboOptions}
+          containerStyle={{ marginBottom: 16 }}
+        />
+        <Switch
+          value={switchValue}
+          onValueChange={setSwitchValue}
+          label="Notifications"
+          style={{ marginBottom: 16 }}
+        />
+        <RadioGroup
+          options={radioOptions}
+          value={radioValue}
+          onChange={setRadioValue}
+          style={{ marginBottom: 16 }}
+        />
         <Slider label="Volume" value={sliderValue} onValueChange={setSliderValue} />
         <Card padding="md">
-        <List
+          <List
             header="Ingrédients"
             headerRight={
               <Button
@@ -499,7 +483,7 @@ function DemoContent() {
               </ListItem>
             ))}
           </List>
-          </Card>
+        </Card>
 
         <View style={{ height: 40 }} />
       </ScrollView>
