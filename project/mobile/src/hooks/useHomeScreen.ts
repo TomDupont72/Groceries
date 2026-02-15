@@ -13,7 +13,7 @@ export function useHomeScreen() {
     const [password, setPassword] = useState("");
     const [passwordConfirm, setPasswordConfirm] = useState("");
     const [authState, setAuthState] = useState<AuthState>("loggedOut");
-    const version = "1.4.0";
+    const version = "1.5.0";
 
     const loadAll = useCallback(async () => {
         setErrorMsg(null);
