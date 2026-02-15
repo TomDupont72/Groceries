@@ -8,10 +8,10 @@ export function useBuying() {
     const [buyItemsData, setBuyItemsData] = useState<BuyItemRow[]>([]);
 
     const groupedBuyItemsData = useMemo(() => {
-        const record: GroupedBuyItemRow[] = [];
+        const record: Record<number, GroupedBuyItemRow> = {};
         for (const item of buyItemsData) {
             const key = item.zoneId;
-            if (!(key in record)) record.push({zoneId: item.zoneId, zoneName: item.zoneName, buyItem: []});
+            if (!(key in record)) record[key] = {zoneName: item.zoneName, buyItem: []};
             record[key].buyItem.push(item);
         }
 
@@ -49,8 +49,8 @@ export function useBuying() {
             console.error("[useGroceries.loadAll] failed", error);
             setErrorMsg("Impossible de charger la page.");
         } finally {
-            if (mode === "page") setLoadingPage(true);
-            else setLoadingRefresh(true);
+            if (mode === "page") setLoadingPage(false);
+            else setLoadingRefresh(false);
         }
     }, []);
 

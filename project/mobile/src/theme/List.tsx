@@ -7,8 +7,8 @@ interface ListProps {
   children: React.ReactNode;
   header?: string | React.ReactNode;
   headerRight?: React.ReactNode;
-  columns?: Array<number | "flex">; // [40, "flex", 80, 60] = checkbox, nom, quantité, unité
-  columnHeaders?: Array<string | React.ReactNode>; // ["", "Nom", "Qté", "Unité"]
+  columns?: (number | "flex")[]; // [40, "flex", 80, 60] = checkbox, nom, quantité, unité
+  columnHeaders?: (string | React.ReactNode)[]; // ["", "Nom", "Qté", "Unité"]
   style?: ViewStyle;
 }
 
@@ -113,7 +113,7 @@ interface ListItemProps {
   onPress?: () => void;
   selected?: boolean;
   disabled?: boolean;
-  columns?: Array<number | "flex">; // Passed from List parent
+  columns?: (number | "flex")[]; // Passed from List parent
   style?: ViewStyle;
 }
 

@@ -1,151 +1,24 @@
-import React, { useState, useEffect } from "react";
-import { Text, View, StyleSheet, Alert } from "react-native";
-import { supabase } from "../api/supabase";
+import React from "react";
+import { Text, View, StyleSheet } from "react-native";
 import * as Linking from "expo-linking";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useTheme, Button, Card, Input } from "../theme/index"
-
-type AuthState = "loggedOut" | "logIn" | "signUp" | "loggedIn";
+import { useTheme, Button, Card, Input, Badge } from "../theme/index"
+import { useHomeScreen } from "../hooks/useHomeScreen";
+import LottieView from "lottie-react-native";
 
 export default function HomeScreen({ navigation }: any) {
   const { theme } = useTheme();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [passwordConfirm, setPasswordConfirm] = useState("");
-  const [authState, setAuthState] = useState<AuthState>("loggedOut");
-  const [username, setUsername] = useState("");
-  const version = "1.4.0";
-  const [appVersion, setAppVersion] = useState("");
-  const [appLink, setAppLink] = useState("");
+  const { loadingPage, errorMsg, authState, appVersion, version, appLink, username, email, password, passwordConfirm, logout, setEmail, setPassword, login, setAuthState, setUsername, setPasswordConfirm, signUp } = useHomeScreen();
 
-  const loadAll = async () => {
-    try {
-      const { data: appData, error: appError } = await supabase
-        .from("AppConfig")
-        .select("name, value");
-
-      if (appError) throw appError;
-
-      const rows = appData ?? [];
-      setAppVersion(rows.find((row) => row.name === "version")?.value ?? "");
-      setAppLink(rows.find((row) => row.name === "link")?.value ?? "");
-    } catch (e: any) {
-      console.log("APP CONFIG ERROR", e);
-    }
-  };
-
-  const loadUsername = async () => {
-    const {
-      data: { user },
-      error: userErr,
-    } = await supabase.auth.getUser();
-
-    if (userErr) throw userErr;
-    if (!user?.id) throw new Error("Utilisateur non connecté");
-
-    const { data, error } = await supabase
-      .from("User")
-      .select("username,userId")
-      .eq("userId", user.id)
-      .maybeSingle();
-
-    if (error) throw error;
-
-    const pickedUsername = data?.username ?? "";
-    setUsername(pickedUsername);
-  };
-
-  const login = async () => {
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
-      });
-
-      if (error) {
-        Alert.alert("Login error", error.message);
-        return;
-      }
-
-      setEmail("");
-      setPassword("");
-      setAuthState("loggedIn");
-
-      await loadUsername();
-    } catch (e: any) {
-      console.log("LOGIN ERROR", e);
-      Alert.alert("Erreur", e?.message || "Login échoué");
-    }
-  };
-
-  const signUp = async () => {
-    try {
-      if (password !== passwordConfirm) {
-        Alert.alert("Les mots de passe sont différents.");
-        return;
-      }
-
-      console.log(email);
-
-      const { data, error } = await supabase.auth.signUp({
-        email: email.trim(),
-        password,
-      });
-      if (error) throw error;
-
-      const userId = data.user?.id;
-      if (!userId) throw new Error("No user returned by signUp");
-
-      const { error: profileError } = await supabase
-        .from("User")
-        .insert({ userId, username })
-        .select("username,userId")
-        .single();
-
-      if (profileError) throw profileError;
-
-      setPassword("");
-      setPasswordConfirm("");
-      setEmail("");
-
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (session) {
-        setAuthState("loggedIn");
-        await loadUsername();
-      } else {
-        Alert.alert(
-          "Inscription réussie",
-          "Vérifie tes emails si une confirmation est requise, puis connecte-toi.",
-        );
-        setAuthState("logIn");
-      }
-    } catch (e: any) {
-      console.log("SIGNUP ERROR", e);
-      Alert.alert("Erreur", e?.message || "Inscription échouée");
-    }
-  };
-
-  const logout = async () => {
-    await supabase.auth.signOut();
-    setUsername("");
-    setAuthState("loggedOut");
-  };
-
-  useEffect(() => {
-    loadAll();
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setAuthState("loggedIn");
-        loadUsername().catch((e) => console.log("LOAD USERNAME ERROR", e));
-      } else {
-        setAuthState("loggedOut");
-      }
-    });
-  }, []);
+  if (loadingPage) {
+    return (
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.bg }]}>
+        <View style={styles.center}>
+          <LottieView source={theme.colors.bg === "#0B0C10" ? require("../../assets/loadingWhite.json") : require("../../assets/loadingBlack.json")} autoPlay loop style={{ width: 200, height: 200 }}/>
+        </View>
+      </SafeAreaView>
+    )
+  }
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.bg }]}>
@@ -159,6 +32,12 @@ export default function HomeScreen({ navigation }: any) {
               <Button title="Gérer les courses" onPress={() => navigation.navigate("Groceries")} fullWidth/>
               <Button title="Faire les courses" onPress={() => navigation.navigate("Buying")} fullWidth/>
               <Button title="Se déconnecter" onPress={logout} fullWidth/>
+              {errorMsg ? (
+                <View style={styles.errorRow}>
+                  <Badge variant="error" style={{ alignSelf: "center" }}>Erreur</Badge>
+                  <Text style={[styles.errorText, {flex: 1, color: theme.colors.text, fontFamily: theme.fontFamily.mono.md, fontSize: theme.fontSize.md}]}>{errorMsg}</Text>
+                </View>
+              ) : null}
             </Card>
             {appVersion !== "" && appVersion !== version && (
               <Text style={[styles.centered, {color: theme.colors.text, fontFamily: theme.fontFamily.mono.sm, fontSize: theme.fontSize.sm}]}>
@@ -178,6 +57,12 @@ export default function HomeScreen({ navigation }: any) {
           <Card variant="outlined" padding="md" style={styles.section}>
             <Input label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" containerStyle={{ marginBottom: theme.spacing.md }}/>
             <Input label="Mot de passe" value={password} onChangeText={setPassword} secureTextEntry containerStyle={{ marginBottom: theme.spacing.md }}/>
+            {errorMsg ? (
+              <View style={styles.errorRow}>
+                <Badge variant="error" style={{ alignSelf: "center" }}>Erreur</Badge>
+                <Text style={[styles.errorText, {flex: 1, color: theme.colors.text, fontFamily: theme.fontFamily.mono.md, fontSize: theme.fontSize.md}]}>{errorMsg}</Text>
+              </View>
+            ) : null}
             <Button title="Se connecter" onPress={login} fullWidth/>
           </Card>
         </View>
@@ -189,6 +74,12 @@ export default function HomeScreen({ navigation }: any) {
           <Card variant="outlined" padding="md" style={styles.section}>
             <Button title="Se connecter" onPress={() => setAuthState("logIn")} fullWidth/>
             <Button title="S'inscrire" onPress={() => setAuthState("signUp")} fullWidth/>
+            {errorMsg ? (
+              <View style={styles.errorRow}>
+                <Badge variant="error" style={{ alignSelf: "center" }}>Erreur</Badge>
+                <Text style={[styles.errorText, {flex: 1, color: theme.colors.text, fontFamily: theme.fontFamily.mono.md, fontSize: theme.fontSize.md}]}>{errorMsg}</Text>
+              </View>
+            ) : null}
           </Card>
         </View>
       )}
@@ -201,6 +92,12 @@ export default function HomeScreen({ navigation }: any) {
             <Input label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" containerStyle={{ marginBottom: theme.spacing.md }}/>
             <Input label="Mot de passe" value={password} onChangeText={setPassword} secureTextEntry containerStyle={{ marginBottom: theme.spacing.md }}/>
             <Input label="Confirmer le mot de passe" value={passwordConfirm} onChangeText={setPasswordConfirm} secureTextEntry containerStyle={{ marginBottom: theme.spacing.md }}/>
+            {errorMsg ? (
+              <View style={styles.errorRow}>
+                <Badge variant="error" style={{ alignSelf: "center" }}>Erreur</Badge>
+                <Text style={[styles.errorText, {flex: 1, color: theme.colors.text, fontFamily: theme.fontFamily.mono.md, fontSize: theme.fontSize.md}]}>{errorMsg}</Text>
+              </View>
+            ) : null}
             <Button title="S'inscrire'" onPress={signUp} fullWidth/>
           </Card>
           <Text style={[styles.centered, {color: theme.colors.text, fontFamily: theme.fontFamily.mono.sm, fontSize: theme.fontSize.sm}]}>
@@ -237,5 +134,25 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     marginBottom: 16,
+  },
+  rowBetween: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 10,
+  },
+  center: {
+     flex: 1, 
+     justifyContent: "center", 
+     alignItems: "center",
+  },
+  errorRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+  },
+  errorText: {
+    flex: 1,
+    flexWrap: "wrap",
   },
 });
