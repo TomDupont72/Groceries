@@ -16,6 +16,7 @@ interface InputProps extends Omit<TextInputProps, "style"> {
   helperText?: string;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
+  disabled?: boolean;
   containerStyle?: ViewStyle;
 }
 
@@ -26,6 +27,7 @@ export function Input({
   leftIcon,
   rightIcon,
   secureTextEntry,
+  disabled = false,
   containerStyle,
   ...props
 }: InputProps) {
@@ -40,9 +42,10 @@ export function Input({
             styles.label,
             {
               color: theme.colors.text,
-              fontFamily:theme.fontFamily.mono.sm,
+              fontFamily: theme.fontFamily.mono.sm,
               fontWeight: theme.fontWeight.semibold,
             },
+            disabled && { opacity: 0.5 },
           ]}
         >
           {label}
@@ -58,24 +61,26 @@ export function Input({
             borderWidth: theme.borderWidth.default,
             borderRadius: theme.radius.none,
           },
+          disabled && { opacity: 0.5 },
         ]}
       >
         {leftIcon && <View style={styles.leftIcon}>{leftIcon}</View>}
 
         <TextInput
           {...props}
+          editable={!disabled}
           secureTextEntry={secureTextEntry && !showPassword}
           style={[
             styles.input,
             {
               color: theme.colors.text,
-              fontFamily:theme.fontFamily.mono.sm,
+              fontFamily: theme.fontFamily.mono.sm,
             },
           ]}
           placeholderTextColor={theme.colors.textMuted}
         />
 
-        {secureTextEntry && (
+        {secureTextEntry && !disabled && (
           <Pressable
             onPress={() => setShowPassword(!showPassword)}
             style={styles.rightIcon}
@@ -95,7 +100,10 @@ export function Input({
         <Text
           style={[
             styles.helperText,
-            { color: theme.colors.error, fontFamily:theme.fontFamily.mono.sm },
+            {
+              color: theme.colors.error,
+              fontFamily: theme.fontFamily.mono.sm,
+            },
           ]}
         >
           {error}
@@ -106,7 +114,10 @@ export function Input({
         <Text
           style={[
             styles.helperText,
-            { color: theme.colors.textMuted, fontFamily:theme.fontFamily.mono.sm },
+            {
+              color: theme.colors.textMuted,
+              fontFamily: theme.fontFamily.mono.sm,
+            },
           ]}
         >
           {helperText}
@@ -120,6 +131,7 @@ export function Textarea({
   label,
   error,
   helperText,
+  disabled = false,
   containerStyle,
   ...props
 }: Omit<InputProps, "leftIcon" | "rightIcon" | "secureTextEntry">) {
@@ -133,9 +145,10 @@ export function Textarea({
             styles.label,
             {
               color: theme.colors.text,
-              fontFamily:theme.fontFamily.mono.sm,
+              fontFamily: theme.fontFamily.mono.sm,
               fontWeight: theme.fontWeight.semibold,
             },
+            disabled && { opacity: 0.5 },
           ]}
         >
           {label}
@@ -144,6 +157,7 @@ export function Textarea({
 
       <TextInput
         {...props}
+        editable={!disabled}
         multiline
         textAlignVertical="top"
         style={[
@@ -154,8 +168,9 @@ export function Textarea({
             borderWidth: theme.borderWidth.default,
             borderRadius: theme.radius.none,
             color: theme.colors.text,
-            fontFamily:theme.fontFamily.mono.sm,
+            fontFamily: theme.fontFamily.mono.sm,
           },
+          disabled && { opacity: 0.5 },
         ]}
         placeholderTextColor={theme.colors.textMuted}
       />
@@ -164,7 +179,10 @@ export function Textarea({
         <Text
           style={[
             styles.helperText,
-            { color: theme.colors.error, fontFamily:theme.fontFamily.mono.sm },
+            {
+              color: theme.colors.error,
+              fontFamily: theme.fontFamily.mono.sm,
+            },
           ]}
         >
           {error}
@@ -175,7 +193,10 @@ export function Textarea({
         <Text
           style={[
             styles.helperText,
-            { color: theme.colors.textMuted, fontFamily:theme.fontFamily.mono.sm },
+            {
+              color: theme.colors.textMuted,
+              fontFamily: theme.fontFamily.mono.sm,
+            },
           ]}
         >
           {helperText}
