@@ -1,13 +1,5 @@
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  Pressable,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  ViewStyle,
-} from "react-native";
+import { View, Text, Pressable, Modal, ScrollView, StyleSheet, ViewStyle } from "react-native";
 import { useTheme } from "./ThemeProvider";
 
 interface SelectOption {
@@ -79,9 +71,7 @@ export function Select({
           style={[
             styles.triggerText,
             {
-              color: selectedOption
-                ? theme.colors.text
-                : theme.colors.textMuted,
+              color: selectedOption ? theme.colors.text : theme.colors.textMuted,
               fontFamily: theme.fontFamily.mono.sm,
             },
           ]}
@@ -97,10 +87,7 @@ export function Select({
         animationType="fade"
         onRequestClose={() => setIsOpen(false)}
       >
-        <Pressable
-          style={styles.modalOverlay}
-          onPress={() => setIsOpen(false)}
-        >
+        <Pressable style={styles.modalOverlay} onPress={() => setIsOpen(false)}>
           <View
             style={[
               styles.modalContent,
@@ -127,8 +114,8 @@ export function Select({
                         backgroundColor: pressed
                           ? theme.colors.bgHover
                           : isSelected
-                          ? theme.colors.bgHover
-                          : "transparent",
+                            ? theme.colors.bgHover
+                            : "transparent",
                         borderBottomColor: theme.colors.borderLight,
                       },
                     ]}
@@ -137,9 +124,7 @@ export function Select({
                       style={[
                         styles.optionText,
                         {
-                          color: isSelected
-                            ? theme.colors.accent
-                            : theme.colors.text,
+                          color: isSelected ? theme.colors.accent : theme.colors.text,
                           fontFamily: theme.fontFamily.mono.sm,
                           fontWeight: isSelected
                             ? theme.fontWeight.semibold

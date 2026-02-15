@@ -53,15 +53,11 @@ export function ComboBox({
     const q = (value || "").toLowerCase().trim();
     if (!q) return options.slice(0, max);
 
-    const starts = options
-      .filter((it) => it.label.toLowerCase().startsWith(q))
-      .slice(0, max);
+    const starts = options.filter((it) => it.label.toLowerCase().startsWith(q)).slice(0, max);
 
     if (starts.length) return starts;
 
-    return options
-      .filter((it) => it.label.toLowerCase().includes(q))
-      .slice(0, max);
+    return options.filter((it) => it.label.toLowerCase().includes(q)).slice(0, max);
   }, [options, value, max]);
 
   function select(item: ComboItem) {
@@ -204,9 +200,7 @@ export function ComboBox({
                         borderTopColor: theme.colors.borderLight,
 
                         // ✅ IMPORTANT : pas transparent -> évite la bande visible
-                        backgroundColor: isActive
-                          ? theme.colors.bgHover
-                          : theme.colors.bgCard,
+                        backgroundColor: isActive ? theme.colors.bgHover : theme.colors.bgCard,
                       },
                       isActive && {
                         borderLeftWidth: theme.borderWidth.thick,

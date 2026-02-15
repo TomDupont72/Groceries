@@ -1,12 +1,5 @@
 import React from "react";
-import {
-  Pressable,
-  Text,
-  StyleSheet,
-  ViewStyle,
-  View,
-  ActivityIndicator,
-} from "react-native";
+import { Pressable, Text, StyleSheet, ViewStyle, View, ActivityIndicator } from "react-native";
 import { useTheme } from "./ThemeProvider";
 
 interface ButtonProps {
@@ -43,19 +36,19 @@ export function Button({
       paddingVertical: theme.spacing.sm,
       paddingHorizontal: theme.spacing.md,
       fontSize: theme.fontSize.sm,
-      fontFamily: theme.fontFamily.mono.sm
+      fontFamily: theme.fontFamily.mono.sm,
     },
     md: {
       paddingVertical: theme.spacing.md,
       paddingHorizontal: theme.spacing.lg,
       fontSize: theme.fontSize.base,
-      fontFamily: theme.fontFamily.mono.md
+      fontFamily: theme.fontFamily.mono.md,
     },
     lg: {
       paddingVertical: theme.spacing.lg,
       paddingHorizontal: theme.spacing.xl,
       fontSize: theme.fontSize.lg,
-      fontFamily: theme.fontFamily.mono.md
+      fontFamily: theme.fontFamily.mono.md,
     },
   } as const;
 
@@ -109,30 +102,24 @@ export function Button({
 
   return (
     <View
-      style={[
-        styles.root,
-        fullWidth && { width: "100%" },
-        style,
-        isDisabled && { opacity: 0.5 },
-      ]}
+      style={[styles.root, fullWidth && { width: "100%" }, style, isDisabled && { opacity: 0.5 }]}
     >
       {/* Shadow layer (derrière) */}
       {variantStyles.showShadow && (
         <View
-            pointerEvents="none"
-            style={[
+          pointerEvents="none"
+          style={[
             StyleSheet.absoluteFillObject,
             {
-                backgroundColor: variantStyles.shadowColor,
-                transform: [{ translateX: offset }, { translateY: offset }],
-                borderWidth: theme.borderWidth.default,
-                borderColor: theme.colors.shadow,
-                borderRadius: theme.radius.none,
+              backgroundColor: variantStyles.shadowColor,
+              transform: [{ translateX: offset }, { translateY: offset }],
+              borderWidth: theme.borderWidth.default,
+              borderColor: theme.colors.shadow,
+              borderRadius: theme.radius.none,
             },
-            ]}
+          ]}
         />
-        )}
-
+      )}
 
       {/* Button layer (au-dessus) */}
       <Pressable
@@ -160,11 +147,7 @@ export function Button({
           {loading ? (
             <ActivityIndicator
               size="small"
-              color={
-                variant === "filled"
-                  ? theme.colors.accentContrast
-                  : theme.colors.accent
-              }
+              color={variant === "filled" ? theme.colors.accentContrast : theme.colors.accent}
             />
           ) : (
             <>
@@ -175,10 +158,7 @@ export function Button({
                   variantStyles.text,
                   {
                     fontSize: currentSize.fontSize,
-                    fontFamily:
-                        size === "sm"
-                        ? theme.fontFamily.mono.sm
-                        : theme.fontFamily.mono.md,
+                    fontFamily: size === "sm" ? theme.fontFamily.mono.sm : theme.fontFamily.mono.md,
                   },
                 ]}
               >

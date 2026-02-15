@@ -4,7 +4,6 @@ import RootNavigator from "./src/navigation/RootNavigator";
 import { useFonts, DMMono_400Regular, DMMono_500Medium } from "@expo-google-fonts/dm-mono";
 import { ThemeProvider } from "./src/theme";
 
-
 export default function App() {
   const [fontsLoaded] = useFonts({
     DMMono_400Regular,
@@ -17,9 +16,9 @@ export default function App() {
 
   return (
     <ThemeProvider initialMode="dark" initialAccent="purple">
-    <NavigationContainer>
-      <RootNavigator />
-    </NavigationContainer>
+      <NavigationContainer>
+        <RootNavigator />
+      </NavigationContainer>
     </ThemeProvider>
   );
 }

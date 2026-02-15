@@ -148,9 +148,7 @@ export function ListItem({
         if (!columnWidth) return child;
 
         const columnStyle: ViewStyle =
-          columnWidth === "flex"
-            ? { flex: 1 }
-            : { width: columnWidth };
+          columnWidth === "flex" ? { flex: 1 } : { width: columnWidth };
 
         return (
           <View key={index} style={columnStyle}>
@@ -188,11 +186,7 @@ interface ListItemTextProps {
   style?: TextStyle;
 }
 
-export function ListItemText({
-  children,
-  variant = "default",
-  style,
-}: ListItemTextProps) {
+export function ListItemText({ children, variant = "default", style }: ListItemTextProps) {
   const { theme } = useTheme();
 
   const variants = {
