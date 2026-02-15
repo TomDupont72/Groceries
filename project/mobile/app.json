@@ -3,8 +3,8 @@
     "name": "Courses",
     "slug": "mobile-expo",
     "icon": "./assets/grocery.png",
-    "version": "1.4.1",
-    "orientation": "portrait",
+    "version": "1.5.0",
+    "orientation": "default",
     "scheme": "mobileexpo",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -22,8 +22,7 @@
       "versionCode": 1
     },
     "web": {
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "output": "static"
     },
     "plugins": [
       "expo-font"

@@ -1,99 +1,27 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { Text, StyleSheet, Alert, View } from "react-native";
-
-import { supabase } from "../api/supabase";
+import React, { useState } from "react";
+import { Text, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useTheme, Input, Card, ComboBox, Button } from "../theme/index"
-
-
-type ZoneRow = {
-  id: number;
-  name: string;
-};
+import { useTheme, Input, Card, ComboBox, Button, Badge } from "../theme/index";
+import { useAddIngredient } from "../hooks/useAddIngredient";
+import LottieView from "lottie-react-native";
 
 export default function AddIngredientScreen() {
+  const { loadingPage, loadingAddIngredient, errorMsg, zoneOptions, addIngredient } = useAddIngredient();
   const { theme } = useTheme();
   const [name, setName] = useState("");
   const [unit, setUnit] = useState("");
   const [zoneId, setZoneId] = useState<number>();
-  const [loading, setLoading] = useState(false);
-  const [zoneData, setZoneData] = useState<ZoneRow[]>([]);
   const [zoneName, setZoneName] = useState("");
 
-  const zoneOptions = useMemo(
-    () => (zoneData ?? []).map(z => ({ label: z.name, value: String(z.id) })),
-    [zoneData]
-  );
-
-  const submit = async () => {
-    if (loading) return;
-
-    if (!name.trim()) {
-      Alert.alert("Erreur", "Nom de l'ingrédient vide");
-      return;
-    }
-
-    try {
-      setLoading(true);
-
-      const { data, error } = await supabase
-        .from("Ingredient")
-        .insert({
-          name: name,
-          unit: unit,
-          zoneId: zoneId,
-        })
-        .select();
-
-      if (error) throw error;
-
-      console.log("INSERT OK", data);
-
-      setName("");
-      setUnit("");
-      setZoneName("");
-      Alert.alert("Succès", "Ingrédient ajouté");
-    } catch (e: any) {
-      console.log("SUPABASE ERROR", e);
-
-      Alert.alert("Error", e?.message || e?.details || e?.hint || "L'ajout a échoué");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadAll = async () => {
-    try {
-      setLoading(true);
-
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-      if (userError) throw userError;
-
-      const userId = user?.id;
-      if (!userId) throw new Error("Utilisateur non connecté");
-
-      const { data: zoneData, error: zoneError } = await supabase
-        .from("Zone")
-        .select("id, name")
-        .order("name", { ascending: true });
-
-      if (zoneError) throw zoneError;
-
-      setZoneData(zoneData);
-    } catch (e: any) {
-      console.log("LOAD ERROR", e);
-      Alert.alert("Error", e?.message || e?.details || e?.hint || "Load failed");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadAll();
-  }, []);
+  if (loadingPage) {
+    return (
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.bg }]}>
+        <View style={styles.center}>
+          <LottieView source={theme.colors.bg === "#0B0C10" ? require("../../assets/loadingWhite.json") : require("../../assets/loadingBlack.json")} autoPlay loop style={{ width: 200, height: 200 }}/>
+        </View>
+      </SafeAreaView>
+    )
+  }
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.bg }]}>
@@ -103,7 +31,22 @@ export default function AddIngredientScreen() {
           <Input label="Nom de l'ingrédient" value={name} onChangeText={setName} containerStyle={{ marginBottom: theme.spacing.md }}/>
           <Input label="Unité de l'ingrédient" value={unit} onChangeText={setUnit} autoCapitalize="none" containerStyle={{ marginBottom: theme.spacing.md }}/>
           <ComboBox label="Choisir une zone" value={zoneName} onChange={setZoneName} options={zoneOptions} onSelectItem={(it) => setZoneId(Number(it.value))} containerStyle={{ marginBottom: theme.spacing.md }} />
-          <Button title="Ajouter" onPress={submit} fullWidth loading={loading}/>
+          {errorMsg ? (
+            <View style={styles.errorRow}>
+              <Badge variant="error" style={{ alignSelf: "center" }}>Erreur</Badge>
+              <Text style={[styles.errorText, {flex: 1, color: theme.colors.text, fontFamily: theme.fontFamily.mono.md, fontSize: theme.fontSize.md}]}>{errorMsg}</Text>
+            </View>
+          ) : null}
+          <Button title="Ajouter" onPress={async () => {
+            const ok = await addIngredient(name, unit, zoneId); 
+            if (ok) {
+              setName("");
+              setUnit("");
+              setZoneId(undefined);
+              setZoneName("");
+            }
+          }}
+          fullWidth loading={loadingAddIngredient}/>
         </Card>
       </View>
     </SafeAreaView>
@@ -119,4 +62,23 @@ const styles = StyleSheet.create({
     flexDirection: "column",
     gap: 18,
   },
+  rowBetween: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  center: {
+     flex: 1, 
+     justifyContent: "center", 
+     alignItems: "center",
+  },
+    errorRow: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: 10,
+    },
+    errorText: {
+      flex: 1,
+      flexWrap: "wrap",
+    },
 });

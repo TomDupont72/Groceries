@@ -225,6 +225,7 @@ interface ListItemInputProps {
   placeholder?: string;
   keyboardType?: "default" | "numeric" | "email-address";
   style?: TextStyle;
+  disabled?: boolean;
 }
 
 export function ListItemInput({
@@ -233,6 +234,7 @@ export function ListItemInput({
   placeholder,
   keyboardType = "default",
   style,
+  disabled = false,
 }: ListItemInputProps) {
   const { theme } = useTheme();
 
@@ -243,6 +245,7 @@ export function ListItemInput({
       placeholder={placeholder}
       placeholderTextColor={theme.colors.textMuted}
       keyboardType={keyboardType}
+      editable={!disabled}
       style={[
         styles.itemInput,
         {
@@ -256,6 +259,7 @@ export function ListItemInput({
           paddingVertical: theme.spacing.xs,
           paddingHorizontal: theme.spacing.sm,
         },
+        disabled && { opacity: 0.5 },
         style,
       ]}
     />
