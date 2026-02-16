@@ -1,9 +1,10 @@
 import React from "react";
-import { Text, View, StyleSheet } from "react-native";
+import { Text, View } from "react-native";
 import * as Linking from "expo-linking";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme, Button, Card, Input, Badge, Loading } from "../theme/index";
 import { useHomeScreen } from "../hooks/useHome";
+import { styles } from "../theme/theme";
 
 export default function HomeScreen({ navigation }: any) {
   const { theme } = useTheme();
@@ -294,50 +295,3 @@ export default function HomeScreen({ navigation }: any) {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    padding: 18,
-  },
-  section: {
-    flexDirection: "column",
-    gap: 18,
-  },
-  version: {
-    opacity: 0.6,
-    marginTop: "auto",
-    textAlign: "right",
-  },
-  link: {
-    color: "#0080FF",
-    textDecorationLine: "underline",
-  },
-
-  centered: {
-    textAlign: "center",
-  },
-  sectionTitle: {
-    marginBottom: 16,
-  },
-  rowBetween: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 10,
-  },
-  center: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  errorRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 10,
-  },
-  errorText: {
-    flex: 1,
-    flexWrap: "wrap",
-  },
-});

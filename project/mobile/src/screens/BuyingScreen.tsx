@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet, ScrollView } from "react-native";
+import { View, Text, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   useTheme,
@@ -13,6 +13,7 @@ import {
   Loading,
 } from "../theme/index";
 import { useBuying } from "../hooks/useBuying";
+import { styles } from "../theme/theme";
 
 export default function BuyingScreen() {
   const { theme } = useTheme();
@@ -75,34 +76,3 @@ export default function BuyingScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    padding: 18,
-  },
-  section: {
-    flexDirection: "column",
-    gap: 18,
-  },
-  rowBetween: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 10,
-  },
-  center: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  errorRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 10,
-  },
-  errorText: {
-    flex: 1,
-    flexWrap: "wrap",
-  },
-});

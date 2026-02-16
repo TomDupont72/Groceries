@@ -1,3 +1,5 @@
+import { StyleSheet } from "react-native";
+
 // Base token values that don't change
 export const baseTokens = {
   radius: {
@@ -169,6 +171,50 @@ export const createTheme = (mode: "dark" | "light", accentColor: keyof typeof ac
     ...baseTokens,
   };
 };
+
+export const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    padding: 18,
+  },
+  section: {
+    flexDirection: "column",
+    gap: 18,
+  },
+  rowBetween: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 10,
+  },
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  errorRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+  },
+  errorText: {
+    flex: 1,
+    flexWrap: "wrap",
+  },
+  link: {
+    color: "#0080FF",
+    textDecorationLine: "underline",
+  },
+
+  centered: {
+    textAlign: "center",
+  },
+  version: {
+    opacity: 0.6,
+    marginTop: "auto",
+    textAlign: "right",
+  },
+});
 
 // Default themes
 export const darkYellowTheme = createTheme("dark", "yellow");

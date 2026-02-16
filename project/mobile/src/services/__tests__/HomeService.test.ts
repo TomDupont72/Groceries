@@ -7,8 +7,8 @@ import {
   insertUser,
   supabaseGetSession,
   supabaseSignOut,
-  ApiError,
 } from "../HomeService";
+import { ApiError } from "../ApiError";
 import { supabase } from "../../api/supabase";
 
 jest.mock("../../api/supabase", () => ({
