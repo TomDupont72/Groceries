@@ -1,4 +1,5 @@
-import { insertIngredient, getZones, ApiError } from "../AddIngredientService";
+import { insertIngredient, getZones } from "../AddIngredientService";
+import { ApiError } from "../ApiError";
 import { supabase } from "../../api/supabase";
 
 jest.mock("../../api/supabase", () => ({
@@ -64,13 +65,7 @@ describe("AddIngredientService", () => {
 
   describe("getZones", () => {
     it("retourne la data quand Supabase répond OK", async () => {
-      const result = {
-        data: [
-          { id: 0, name: "Fruits" },
-          { id: 1, name: "Légumes" },
-        ],
-        error: null,
-      };
+      const result = { data: [{ id: 1, name: "Fruits" }], error: null };
 
       (supabase.from as jest.Mock).mockReturnValue({
         select: () => ({
@@ -105,6 +100,7 @@ describe("AddIngredientService", () => {
       });
 
       const data = await getZones();
+
       expect(data).toEqual([]);
     });
   });

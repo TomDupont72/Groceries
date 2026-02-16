@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { Text, StyleSheet, View } from "react-native";
+import { Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme, Input, Card, ComboBox, Button, Badge, Loading } from "../theme/index";
 import { useAddIngredient } from "../hooks/useAddIngredient";
+import { styles } from "../theme/theme";
 
 export default function AddIngredientScreen() {
   const { loadingPage, loadingAddIngredient, errorMsg, zoneOptions, addIngredient } =
@@ -88,33 +89,3 @@ export default function AddIngredientScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    padding: 18,
-  },
-  section: {
-    flexDirection: "column",
-    gap: 18,
-  },
-  rowBetween: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  center: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  errorRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 10,
-  },
-  errorText: {
-    flex: 1,
-    flexWrap: "wrap",
-  },
-});
