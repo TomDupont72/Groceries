@@ -1,18 +1,10 @@
 import { supabase } from "../api/supabase";
+import { ApiError } from "./ApiError";
 
 export type ZoneRow = {
   id: number;
   name: string;
 };
-
-export class ApiError extends Error {
-  public code?: string;
-  constructor(message: string, code?: string) {
-    super(message);
-    this.name = "ApiError";
-    this.code = code;
-  }
-}
 
 export async function insertIngredient(name: string, unit: string, zoneId: number) {
   const { data, error } = await supabase

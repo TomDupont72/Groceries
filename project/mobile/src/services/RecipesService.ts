@@ -1,4 +1,5 @@
 import { supabase } from "../api/supabase";
+import { ApiError } from "./ApiError";
 
 export type IngredientRow = {
   id: number;
@@ -18,15 +19,6 @@ export type RecipeIngredientRow = {
   ingredientId: number;
   quantity: number;
 };
-
-export class ApiError extends Error {
-  public code?: string;
-  constructor(message: string, code?: string) {
-    super(message);
-    this.name = "ApiError";
-    this.code = code;
-  }
-}
 
 export async function getIngredients() {
   const { data, error } = await supabase

@@ -1,4 +1,5 @@
 import { supabase } from "../api/supabase";
+import { ApiError } from "./ApiError";
 
 export type BuyItemRow = {
   ingredientId: number;
@@ -15,31 +16,6 @@ export type GroupedBuyItemRow = {
   zoneName: string;
   buyItem: BuyItemRow[];
 };
-
-export class ApiError extends Error {
-  public code?: string;
-  constructor(message: string, code?: string) {
-    super(message);
-    this.name = "ApiError";
-    this.code = code;
-  }
-}
-
-export async function getGrocery() {
-  const { data, error } = await supabase.from("Grocery").select("id").single();
-
-  if (error) throw new ApiError(error.message, error.code);
-
-  return data;
-}
-
-export async function insertGrocery() {
-  const { data, error } = await supabase.from("Grocery").insert({}).select("id").single();
-
-  if (error) throw new ApiError(error.message, error.code);
-
-  return data;
-}
 
 export async function getBuyItems(groceryId: number) {
   const { data, error } = await supabase

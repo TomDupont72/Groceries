@@ -77,7 +77,7 @@ describe("useAddIngredient", () => {
     let ok = true;
 
     await act(async () => {
-      ok = await result.current.addIngredient("Tomate", "g", undefined);
+      ok = await result.current.addIngredient("Tomate", "g");
     });
 
     expect(ok).toBe(false);

@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet, ScrollView } from "react-native";
+import { View, Text, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   useTheme,
@@ -14,6 +14,7 @@ import {
   Loading,
 } from "../theme/index";
 import { useGroceries } from "../hooks/useGroceries";
+import { styles } from "../theme/theme";
 
 export default function GroceriesScreen() {
   const { theme } = useTheme();
@@ -117,34 +118,3 @@ export default function GroceriesScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    padding: 18,
-  },
-  section: {
-    flexDirection: "column",
-    gap: 18,
-  },
-  rowBetween: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 10,
-  },
-  center: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  errorRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 10,
-  },
-  errorText: {
-    flex: 1,
-    flexWrap: "wrap",
-  },
-});

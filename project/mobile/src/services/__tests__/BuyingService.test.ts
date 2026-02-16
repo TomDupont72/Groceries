@@ -1,10 +1,5 @@
-import {
-  getGrocery,
-  insertGrocery,
-  getBuyItems,
-  upsertGroceryIngredient,
-  ApiError,
-} from "../BuyingService";
+import { getBuyItems, upsertGroceryIngredient } from "../BuyingService";
+import { ApiError } from "../ApiError";
 import { supabase } from "../../api/supabase";
 
 jest.mock("../../api/supabase", () => ({
@@ -32,70 +27,6 @@ describe("BuyingService", () => {
     jest.restoreAllMocks();
     jest.clearAllMocks();
     jest.resetModules();
-  });
-
-  describe("getGrocery", () => {
-    it("retourne la data quand Supabase répond OK", async () => {
-      const result = { data: { id: 1 }, error: null };
-
-      (supabase.from as jest.Mock).mockReturnValue({
-        select: () => ({
-          single: async () => result,
-        }),
-      });
-
-      const data = await getGrocery();
-
-      expect(supabase.from).toHaveBeenCalledWith("Grocery");
-      expect(data).toEqual({ id: 1 });
-    });
-
-    it("throw ApiError quand Supabase renvoie une erreur", async () => {
-      (supabase.from as jest.Mock).mockReturnValue({
-        select: () => ({
-          single: async () => ({
-            data: null,
-            error: { message: "select failed", code: "42501" },
-          }),
-        }),
-      });
-
-      await expect(getGrocery()).rejects.toBeInstanceOf(ApiError);
-    });
-  });
-
-  describe("insertGrocery", () => {
-    it("retourne la data quand Supabase répond OK", async () => {
-      const result = { data: { id: 22 }, error: null };
-
-      (supabase.from as jest.Mock).mockReturnValue({
-        insert: () => ({
-          select: () => ({
-            single: async () => result,
-          }),
-        }),
-      });
-
-      const data = await insertGrocery();
-
-      expect(supabase.from).toHaveBeenCalledWith("Grocery");
-      expect(data).toEqual({ id: 22 });
-    });
-
-    it("throw ApiError quand Supabase renvoie une erreur", async () => {
-      (supabase.from as jest.Mock).mockReturnValue({
-        insert: () => ({
-          select: () => ({
-            single: async () => ({
-              data: null,
-              error: { message: "insert failed", code: "42501" },
-            }),
-          }),
-        }),
-      });
-
-      await expect(insertGrocery()).rejects.toBeInstanceOf(ApiError);
-    });
   });
 
   describe("getBuyItems", () => {
@@ -144,10 +75,7 @@ describe("BuyingService", () => {
 
   describe("upsertGroceryIngredient", () => {
     it("retourne la data quand Supabase répond OK", async () => {
-      const result = {
-        data: { id: 1, ingredientId: 3, checked: true },
-        error: null,
-      };
+      const result = { data: { id: 1, ingredientId: 3, checked: true }, error: null };
 
       (supabase.from as jest.Mock).mockReturnValue({
         upsert: () => ({
