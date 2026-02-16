@@ -1,4 +1,4 @@
-name: Local Android Build (APK) + publish URL
+name: Local Android Build + Firebase App Distribution + publish URL
 
 on:
   push:
@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: write   # nécessaire pour créer une Release
+      contents: read
 
     env:
       APP_DIR: project/mobile
@@ -40,7 +40,7 @@ jobs:
         working-directory: project/mobile
         run: npm ci
 
-      # (Optionnel mais utile) cache Gradle pour accélérer
+      # Cache Gradle (accélère)
       - name: Cache Gradle
         uses: actions/cache@v4
         with:
@@ -65,7 +65,7 @@ jobs:
           echo "app_version=$APP_VERSION" >> $GITHUB_OUTPUT
           echo "android_version_code=$ANDROID_VERSION_CODE" >> $GITHUB_OUTPUT
 
-      # 2) Générer le projet android/ (si pas déjà commité) puis build l'APK release
+      # 2) Prebuild + build APK release
       - name: Prebuild (generate android)
         working-directory: project/mobile
         run: |
@@ -77,8 +77,8 @@ jobs:
           chmod +x ./gradlew
           ./gradlew assembleRelease
 
-      # 3) Renommer/coller l'APK dans dist/
-      - name: Collect APK artifact
+      # 3) Collecter l'APK
+      - name: Collect APK
         id: collect_apk
         working-directory: project/mobile
         run: |
@@ -97,30 +97,27 @@ jobs:
           echo "apk_name=$APK_NAME" >> $GITHUB_OUTPUT
           echo "apk_path=dist/$APK_NAME" >> $GITHUB_OUTPUT
 
-      # 4) Publier sur GitHub Release + obtenir une URL stable
-      - name: Create GitHub Release + upload APK
-        id: gh_release
-        uses: softprops/action-gh-release@v2
+      # 4) Upload Firebase App Distribution
+      - name: Upload to Firebase App Distribution
+        id: firebase_upload
+        uses: wzieba/Firebase-Distribution-Github-Action@v1
         with:
-          tag_name: preview-${{ github.run_number }}
-          name: "Android Preview #${{ github.run_number }}"
-          files: ${{ env.APP_DIR }}/${{ steps.collect_apk.outputs.apk_path }}
-          generate_release_notes: false
-
-      - name: Compute download URL
-        id: build_url
-        run: |
-          URL="https://github.com/${{ github.repository }}/releases/download/preview-${{ github.run_number }}/${{ steps.collect_apk.outputs.apk_name }}"
-          echo "build_url=$URL" >> $GITHUB_OUTPUT
-          echo "Build URL: $URL"
+          appId: ${{ secrets.FIREBASE_APP_ID }}
+          serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          groups: ${{ secrets.FIREBASE_GROUPS }} # ex: "qa,internal" (ou mets en dur)
+          file: ${{ env.APP_DIR }}/${{ steps.collect_apk.outputs.apk_path }}
+          releaseNotes: |
+            Build #${{ github.run_number }}
+            Commit: ${{ github.sha }}
+            Branch: ${{ github.ref_name }}
 
       # 5) Publier en base Supabase (AppConfig)
-      - name: Publish build URL to Supabase (AppConfig)
+      - name: Publish TESTING_URL to Supabase (AppConfig)
         working-directory: project/mobile
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          BUILD_URL: ${{ steps.build_url.outputs.build_url }}
+          BUILD_URL: ${{ steps.firebase_upload.outputs.TESTING_URI }}
           APP_VERSION: ${{ steps.app_version.outputs.app_version }}
           ANDROID_VERSION_CODE: ${{ steps.app_version.outputs.android_version_code }}
         run: |
@@ -142,7 +139,7 @@ jobs:
           const androidVersionCode = process.env.ANDROID_VERSION_CODE || "";
 
           if (!buildUrl) {
-            console.error("Missing BUILD_URL (did the upload step run?)");
+            console.error("Missing BUILD_URL (Firebase upload step didn't output TESTING_URI?)");
             process.exit(1);
           }
 
@@ -168,6 +165,7 @@ jobs:
 
       - name: Summary
         run: |
-          echo "✅ APK URL: ${{ steps.build_url.outputs.build_url }}"
+          echo "✅ Firebase TESTING_URL: ${{ steps.firebase_upload.outputs.TESTING_URI }}"
+          echo "✅ Firebase console URL: ${{ steps.firebase_upload.outputs.FIREBASE_CONSOLE_URI }}"
           echo "✅ App version: ${{ steps.app_version.outputs.app_version }}"
           echo "✅ versionCode: ${{ steps.app_version.outputs.android_version_code }}"
