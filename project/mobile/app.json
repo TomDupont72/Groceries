@@ -3,7 +3,7 @@
     "name": "Courses",
     "slug": "mobile-expo",
     "icon": "./assets/grocery.png",
-    "version": "1.5.1",
+    "version": "1.5.2",
     "orientation": "default",
     "scheme": "mobileexpo",
     "userInterfaceStyle": "automatic",
