@@ -1,4 +1,4 @@
-name: EAS Build Android (preview) + publish URL
+name: Local Android Build (APK) + publish URL
 
 on:
   push:
@@ -6,15 +6,15 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: eas-android-preview-main
+  group: android-preview-main
   cancel-in-progress: true
 
 jobs:
-  eas-android-preview:
+  android-preview:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: read
+      contents: write   # nécessaire pour créer une Release
 
     env:
       APP_DIR: project/mobile
@@ -30,39 +30,34 @@ jobs:
           cache: npm
           cache-dependency-path: project/mobile/package-lock.json
 
+      - name: Setup Java (Android)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
       - name: Install deps
         working-directory: project/mobile
         run: npm ci
 
-      - name: Setup Expo + EAS
-        uses: expo/expo-github-action@v8
+      # (Optionnel mais utile) cache Gradle pour accélérer
+      - name: Cache Gradle
+        uses: actions/cache@v4
         with:
-          token: ${{ secrets.EXPO_TOKEN }}
-          eas-version: latest
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('project/mobile/android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
 
-      # 1) Build (et ATTEND la fin) + JSON avec buildUrl
-      - name: EAS build Android (preview)
-        id: eas_build
-        working-directory: project/mobile
-        run: |
-          eas build -p android --profile preview --non-interactive --wait --json > eas-build.json
-
-          BUILD_URL=$(node -p "require('./eas-build.json')[0].artifacts.buildUrl")
-          BUILD_ID=$(node -p "require('./eas-build.json')[0].id")
-
-          echo "Build ID: $BUILD_ID"
-          echo "Build URL: $BUILD_URL"
-
-          echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
-          echo "build_url=$BUILD_URL" >> $GITHUB_OUTPUT
-
-      # 2) Lire la version dans app.json (option B)
+      # 1) Lire la version dans app.json
       - name: Read app version from app.json
         id: app_version
         working-directory: project/mobile
         run: |
-          APP_VERSION=$(node -e "const fs=require('fs'); const p='./app.json'; const j=JSON.parse(fs.readFileSync(p,'utf8')); console.log(j.expo?.version ?? '')")
-          ANDROID_VERSION_CODE=$(node -e "const fs=require('fs'); const p='./app.json'; const j=JSON.parse(fs.readFileSync(p,'utf8')); console.log(j.expo?.android?.versionCode ?? '')")
+          APP_VERSION=$(node -e "const fs=require('fs'); const j=JSON.parse(fs.readFileSync('./app.json','utf8')); console.log(j.expo?.version ?? '')")
+          ANDROID_VERSION_CODE=$(node -e "const fs=require('fs'); const j=JSON.parse(fs.readFileSync('./app.json','utf8')); console.log(j.expo?.android?.versionCode ?? '')")
 
           echo "App version: $APP_VERSION"
           echo "Android versionCode: $ANDROID_VERSION_CODE"
@@ -70,13 +65,62 @@ jobs:
           echo "app_version=$APP_VERSION" >> $GITHUB_OUTPUT
           echo "android_version_code=$ANDROID_VERSION_CODE" >> $GITHUB_OUTPUT
 
-      # 3) Publier en base Supabase (AppConfig)
+      # 2) Générer le projet android/ (si pas déjà commité) puis build l'APK release
+      - name: Prebuild (generate android)
+        working-directory: project/mobile
+        run: |
+          npx expo prebuild --platform android --non-interactive
+
+      - name: Build APK (Gradle)
+        working-directory: project/mobile/android
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleRelease
+
+      # 3) Renommer/coller l'APK dans dist/
+      - name: Collect APK artifact
+        id: collect_apk
+        working-directory: project/mobile
+        run: |
+          mkdir -p dist
+          APK_PATH="android/app/build/outputs/apk/release/app-release.apk"
+
+          if [ ! -f "$APK_PATH" ]; then
+            echo "❌ APK not found at $APK_PATH"
+            ls -R android/app/build/outputs/apk || true
+            exit 1
+          fi
+
+          APK_NAME="app-preview-${{ github.run_number }}.apk"
+          cp "$APK_PATH" "dist/$APK_NAME"
+
+          echo "apk_name=$APK_NAME" >> $GITHUB_OUTPUT
+          echo "apk_path=dist/$APK_NAME" >> $GITHUB_OUTPUT
+
+      # 4) Publier sur GitHub Release + obtenir une URL stable
+      - name: Create GitHub Release + upload APK
+        id: gh_release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: preview-${{ github.run_number }}
+          name: "Android Preview #${{ github.run_number }}"
+          files: ${{ env.APP_DIR }}/${{ steps.collect_apk.outputs.apk_path }}
+          generate_release_notes: false
+
+      - name: Compute download URL
+        id: build_url
+        run: |
+          URL="https://github.com/${{ github.repository }}/releases/download/preview-${{ github.run_number }}/${{ steps.collect_apk.outputs.apk_name }}"
+          echo "build_url=$URL" >> $GITHUB_OUTPUT
+          echo "Build URL: $URL"
+
+      # 5) Publier en base Supabase (AppConfig)
       - name: Publish build URL to Supabase (AppConfig)
         working-directory: project/mobile
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          BUILD_URL: ${{ steps.eas_build.outputs.build_url }}
+          BUILD_URL: ${{ steps.build_url.outputs.build_url }}
           APP_VERSION: ${{ steps.app_version.outputs.app_version }}
           ANDROID_VERSION_CODE: ${{ steps.app_version.outputs.android_version_code }}
         run: |
@@ -98,11 +142,10 @@ jobs:
           const androidVersionCode = process.env.ANDROID_VERSION_CODE || "";
 
           if (!buildUrl) {
-            console.error("Missing BUILD_URL (did the build step run?)");
+            console.error("Missing BUILD_URL (did the upload step run?)");
             process.exit(1);
           }
 
-          // On stocke ce que tu veux : URL + version
           const rows = [
             { name: "link", value: buildUrl },
             { name: "version", value: appVersion },
@@ -125,6 +168,6 @@ jobs:
 
       - name: Summary
         run: |
-          echo "✅ APK URL: ${{ steps.eas_build.outputs.build_url }}"
+          echo "✅ APK URL: ${{ steps.build_url.outputs.build_url }}"
           echo "✅ App version: ${{ steps.app_version.outputs.app_version }}"
           echo "✅ versionCode: ${{ steps.app_version.outputs.android_version_code }}"
