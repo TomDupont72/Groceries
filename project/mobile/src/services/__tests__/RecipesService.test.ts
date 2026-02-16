@@ -3,8 +3,8 @@ import {
   getRecipes,
   insertRecipe,
   insertRecipeIngredient,
-  ApiError,
 } from "../RecipesService";
+import { ApiError } from "../ApiError";
 import { supabase } from "../../api/supabase";
 
 jest.mock("../../api/supabase", () => ({

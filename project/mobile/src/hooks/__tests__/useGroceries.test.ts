@@ -1,19 +1,16 @@
 import { renderHook, act, waitFor } from "@testing-library/react-native";
 import { useGroceries } from "../useGroceries";
-import {
-  getGrocery,
-  insertGrocery,
-  getRecipes,
-  getGroceryRecipe,
-  insertGroceryRecipe,
-} from "../../services/GroceriesService";
+import { getRecipes, getGroceryRecipe, insertGroceryRecipe } from "../../services/GroceriesService";
+import { getOrCreateGroceryId } from "../../usecases/GroceriesUsecase";
 
 jest.mock("../../services/GroceriesService", () => ({
-  getGrocery: jest.fn().mockResolvedValue({ id: 1 }),
-  insertGrocery: jest.fn(),
   getRecipes: jest.fn().mockResolvedValue([]),
   getGroceryRecipe: jest.fn().mockResolvedValue([]),
   insertGroceryRecipe: jest.fn(),
+}));
+
+jest.mock("../../usecases/GroceriesUsecase", () => ({
+  getOrCreateGroceryId: jest.fn().mockResolvedValue(1),
 }));
 
 describe("useGroceries", () => {
@@ -37,7 +34,7 @@ describe("useGroceries", () => {
     jest.restoreAllMocks();
     jest.clearAllMocks();
     jest.resetModules();
-    (getGrocery as jest.Mock).mockResolvedValue({ id: 1 });
+    (getOrCreateGroceryId as jest.Mock).mockResolvedValue(1);
     (getRecipes as jest.Mock).mockResolvedValue([]);
     (getGroceryRecipe as jest.Mock).mockResolvedValue([]);
   });
@@ -86,7 +83,7 @@ describe("useGroceries", () => {
   });
 
   it("charge recettes + lignes de courses au démarrage", async () => {
-    (getGrocery as jest.Mock).mockResolvedValue({ id: 7 });
+    (getOrCreateGroceryId as jest.Mock).mockResolvedValue(7);
     (getRecipes as jest.Mock).mockResolvedValue([
       { id: 10, name: "Salade", createdAt: "2025-01-01T00:00:00.000Z" },
     ]);
@@ -96,7 +93,7 @@ describe("useGroceries", () => {
 
     const { result } = renderHook(() => useGroceries());
 
-    await waitFor(() => expect(getGrocery).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(getOrCreateGroceryId).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(getRecipes).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(getGroceryRecipe).toHaveBeenCalledTimes(1));
 
@@ -111,29 +108,16 @@ describe("useGroceries", () => {
     expect(result.current.loadingPage).toBe(false);
   });
 
-  it("insère une grocery si aucune n'existe", async () => {
-    (getGrocery as jest.Mock).mockResolvedValue({ id: null });
-    (insertGrocery as jest.Mock).mockResolvedValue({ id: 22 });
-    (getRecipes as jest.Mock).mockResolvedValue([]);
-    (getGroceryRecipe as jest.Mock).mockResolvedValue([]);
-
-    renderHook(() => useGroceries());
-
-    await waitFor(() => expect(getGrocery).toHaveBeenCalledTimes(1));
-    await waitFor(() => expect(insertGrocery).toHaveBeenCalledTimes(1));
-    await waitFor(() => expect(getGroceryRecipe).toHaveBeenCalledWith(22));
-  });
-
-  it("affiche une erreur si la récupération/creation des courses échoue", async () => {
-    (getGrocery as jest.Mock).mockRejectedValue(new Error("network"));
+  it("ne charge pas les données si getOrCreateGroceryId retourne null", async () => {
+    (getOrCreateGroceryId as jest.Mock).mockResolvedValue(null);
 
     const { result } = renderHook(() => useGroceries());
 
     await waitFor(() => expect(result.current.loadingPage).toBe(false));
 
-    expect(result.current.errorMsg).toBe("Impossible de récupérer les courses.");
     expect(getRecipes).not.toHaveBeenCalled();
     expect(getGroceryRecipe).not.toHaveBeenCalled();
+    expect(result.current.errorMsg).toBeNull();
   });
 
   it("affiche une erreur si le chargement de la page échoue", async () => {
@@ -148,7 +132,7 @@ describe("useGroceries", () => {
 
   it("submit refuse si aucune recette sélectionnée", async () => {
     const { result } = renderHook(() => useGroceries());
-    await waitFor(() => expect(getGrocery).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(getOrCreateGroceryId).toHaveBeenCalledTimes(1));
 
     await act(async () => {
       await result.current.submit();
@@ -160,7 +144,7 @@ describe("useGroceries", () => {
 
   it("submit refuse si une quantité est vide", async () => {
     const { result } = renderHook(() => useGroceries());
-    await waitFor(() => expect(getGrocery).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(getOrCreateGroceryId).toHaveBeenCalledTimes(1));
 
     act(() => {
       result.current.toggleRecipe(3);
@@ -175,13 +159,13 @@ describe("useGroceries", () => {
   });
 
   it("submit succès: insère groceryRecipe, refresh et reset sélection", async () => {
-    (getGrocery as jest.Mock).mockResolvedValue({ id: 7 });
+    (getOrCreateGroceryId as jest.Mock).mockResolvedValue(7);
     (insertGroceryRecipe as jest.Mock).mockResolvedValue(null);
     (getRecipes as jest.Mock).mockResolvedValue([]);
     (getGroceryRecipe as jest.Mock).mockResolvedValue([]);
 
     const { result } = renderHook(() => useGroceries());
-    await waitFor(() => expect(getGrocery).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(getOrCreateGroceryId).toHaveBeenCalledTimes(1));
 
     act(() => {
       result.current.toggleRecipe(3);
@@ -206,11 +190,11 @@ describe("useGroceries", () => {
   });
 
   it("submit affiche une erreur si l'ajout échoue", async () => {
-    (getGrocery as jest.Mock).mockResolvedValue({ id: 7 });
+    (getOrCreateGroceryId as jest.Mock).mockResolvedValue(7);
     (insertGroceryRecipe as jest.Mock).mockRejectedValue(new Error("db down"));
 
     const { result } = renderHook(() => useGroceries());
-    await waitFor(() => expect(getGrocery).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(getOrCreateGroceryId).toHaveBeenCalledTimes(1));
 
     act(() => {
       result.current.toggleRecipe(3);

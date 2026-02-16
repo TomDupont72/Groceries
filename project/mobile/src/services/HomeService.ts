@@ -1,13 +1,5 @@
 import { supabase } from "../api/supabase";
-
-export class ApiError extends Error {
-  public code?: string;
-  constructor(message: string, code?: string) {
-    super(message);
-    this.name = "ApiError";
-    this.code = code;
-  }
-}
+import { ApiError } from "./ApiError";
 
 export async function getAppConfig() {
   const { data, error } = await supabase.from("AppConfig").select("name,value");

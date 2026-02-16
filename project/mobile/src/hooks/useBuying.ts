@@ -1,12 +1,11 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
 import {
-  getGrocery,
-  insertGrocery,
   upsertGroceryIngredient,
   getBuyItems,
   BuyItemRow,
   GroupedBuyItemRow,
 } from "../services/BuyingService";
+import { getOrCreateGroceryId } from "../usecases/GroceriesUsecase";
 
 export function useBuying() {
   const [loadingRefresh, setLoadingRefresh] = useState(false);
@@ -24,23 +23,6 @@ export function useBuying() {
 
     return record;
   }, [buyItemsData]);
-
-  const getOrCreateGroceryId = async () => {
-    setErrorMsg(null);
-
-    try {
-      const dataGrocery = await getGrocery();
-
-      if (dataGrocery?.id != null) return dataGrocery.id;
-
-      const dataGroceryInserted = await insertGrocery();
-
-      return dataGroceryInserted.id;
-    } catch (error) {
-      console.error("[useGroceries.getOrCreateGroceryId] failed", error);
-      setErrorMsg("Impossible de récupérer les courses.");
-    }
-  };
 
   const loadAll = useCallback(async (mode: "page" | "refresh") => {
     if (mode === "page") setLoadingPage(true);

@@ -1,17 +1,15 @@
 import { renderHook, act, waitFor } from "@testing-library/react-native";
 import { useBuying } from "../useBuying";
-import {
-  getGrocery,
-  insertGrocery,
-  upsertGroceryIngredient,
-  getBuyItems,
-} from "../../services/BuyingService";
+import { upsertGroceryIngredient, getBuyItems } from "../../services/BuyingService";
+import { getOrCreateGroceryId } from "../../usecases/GroceriesUsecase";
 
 jest.mock("../../services/BuyingService", () => ({
-  getGrocery: jest.fn().mockResolvedValue({ id: 1 }),
-  insertGrocery: jest.fn(),
   upsertGroceryIngredient: jest.fn(),
   getBuyItems: jest.fn().mockResolvedValue([]),
+}));
+
+jest.mock("../../usecases/GroceriesUsecase", () => ({
+  getOrCreateGroceryId: jest.fn().mockResolvedValue(1),
 }));
 
 describe("useBuying", () => {
@@ -35,30 +33,32 @@ describe("useBuying", () => {
     jest.restoreAllMocks();
     jest.clearAllMocks();
     jest.resetModules();
-    (getGrocery as jest.Mock).mockResolvedValue({ id: 1 });
+    (getOrCreateGroceryId as jest.Mock).mockResolvedValue(1);
     (getBuyItems as jest.Mock).mockResolvedValue([]);
   });
 
   it("groupedBuyItemsData crée un groupe quand la zone n'existe pas encore", async () => {
-    (getGrocery as jest.Mock).mockResolvedValue({ id: 7 });
+    (getOrCreateGroceryId as jest.Mock).mockResolvedValue(7);
     (getBuyItems as jest.Mock).mockResolvedValue([
       {
         ingredientId: 3,
-        ingredientName: "Tomate",
+        name: "Tomate",
         unit: "g",
-        quantity: 200,
-        checked: false,
-        zoneId: 1,
         zoneName: "Légumes",
+        zoneId: 1,
+        total: 200,
+        checked: false,
+        groceryIngredientId: null,
       },
       {
         ingredientId: 4,
-        ingredientName: "Courgette",
+        name: "Courgette",
         unit: "g",
-        quantity: 150,
-        checked: false,
-        zoneId: 1,
         zoneName: "Légumes",
+        zoneId: 1,
+        total: 150,
+        checked: false,
+        groceryIngredientId: null,
       },
     ]);
 
@@ -72,21 +72,23 @@ describe("useBuying", () => {
         buyItem: [
           {
             ingredientId: 3,
-            ingredientName: "Tomate",
+            name: "Tomate",
             unit: "g",
-            quantity: 200,
-            checked: false,
-            zoneId: 1,
             zoneName: "Légumes",
+            zoneId: 1,
+            total: 200,
+            checked: false,
+            groceryIngredientId: null,
           },
           {
             ingredientId: 4,
-            ingredientName: "Courgette",
+            name: "Courgette",
             unit: "g",
-            quantity: 150,
-            checked: false,
-            zoneId: 1,
             zoneName: "Légumes",
+            zoneId: 1,
+            total: 150,
+            checked: false,
+            groceryIngredientId: null,
           },
         ],
       },
@@ -94,31 +96,33 @@ describe("useBuying", () => {
   });
 
   it("charge les buy items au démarrage", async () => {
-    (getGrocery as jest.Mock).mockResolvedValue({ id: 7 });
+    (getOrCreateGroceryId as jest.Mock).mockResolvedValue(7);
     (getBuyItems as jest.Mock).mockResolvedValue([
       {
         ingredientId: 3,
-        ingredientName: "Tomate",
+        name: "Tomate",
         unit: "g",
-        quantity: 200,
-        checked: false,
-        zoneId: 1,
         zoneName: "Légumes",
+        zoneId: 1,
+        total: 200,
+        checked: false,
+        groceryIngredientId: null,
       },
       {
         ingredientId: 5,
-        ingredientName: "Sel",
+        name: "Sel",
         unit: "g",
-        quantity: 10,
-        checked: true,
-        zoneId: 2,
         zoneName: "Épices",
+        zoneId: 2,
+        total: 10,
+        checked: true,
+        groceryIngredientId: 9,
       },
     ]);
 
     const { result } = renderHook(() => useBuying());
 
-    await waitFor(() => expect(getGrocery).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(getOrCreateGroceryId).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(getBuyItems).toHaveBeenCalledTimes(1));
     expect(getBuyItems).toHaveBeenCalledWith(7);
 
@@ -129,12 +133,13 @@ describe("useBuying", () => {
           buyItem: [
             {
               ingredientId: 3,
-              ingredientName: "Tomate",
+              name: "Tomate",
               unit: "g",
-              quantity: 200,
-              checked: false,
-              zoneId: 1,
               zoneName: "Légumes",
+              zoneId: 1,
+              total: 200,
+              checked: false,
+              groceryIngredientId: null,
             },
           ],
         },
@@ -143,12 +148,13 @@ describe("useBuying", () => {
           buyItem: [
             {
               ingredientId: 5,
-              ingredientName: "Sel",
+              name: "Sel",
               unit: "g",
-              quantity: 10,
-              checked: true,
-              zoneId: 2,
               zoneName: "Épices",
+              zoneId: 2,
+              total: 10,
+              checked: true,
+              groceryIngredientId: 9,
             },
           ],
         },
@@ -157,28 +163,6 @@ describe("useBuying", () => {
 
     expect(result.current.errorMsg).toBeNull();
     expect(result.current.loadingPage).toBe(false);
-  });
-
-  it("insère une grocery si aucune n'existe", async () => {
-    (getGrocery as jest.Mock).mockResolvedValue({ id: null });
-    (insertGrocery as jest.Mock).mockResolvedValue({ id: 22 });
-    (getBuyItems as jest.Mock).mockResolvedValue([]);
-
-    renderHook(() => useBuying());
-
-    await waitFor(() => expect(getGrocery).toHaveBeenCalledTimes(1));
-    await waitFor(() => expect(insertGrocery).toHaveBeenCalledTimes(1));
-    await waitFor(() => expect(getBuyItems).toHaveBeenCalledWith(22));
-  });
-
-  it("affiche une erreur si la récupération/creation des courses échoue", async () => {
-    (getGrocery as jest.Mock).mockRejectedValue(new Error("network"));
-
-    const { result } = renderHook(() => useBuying());
-
-    await waitFor(() => expect(result.current.loadingPage).toBe(false));
-
-    expect(result.current.errorMsg).toBe("Impossible de récupérer les courses.");
   });
 
   it("affiche une erreur si le chargement échoue", async () => {
@@ -191,47 +175,61 @@ describe("useBuying", () => {
     expect(result.current.errorMsg).toBe("Impossible de charger la page.");
   });
 
+  it("affiche une erreur si getOrCreateGroceryId échoue", async () => {
+    (getOrCreateGroceryId as jest.Mock).mockRejectedValue(new Error("network"));
+
+    const { result } = renderHook(() => useBuying());
+
+    await waitFor(() => expect(result.current.loadingPage).toBe(false));
+
+    expect(result.current.errorMsg).toBe("Impossible de charger la page.");
+  });
+
   it("toggleCheck met à jour localement l'item ciblé", async () => {
-    (getGrocery as jest.Mock).mockResolvedValue({ id: 7 });
+    (getOrCreateGroceryId as jest.Mock).mockResolvedValue(7);
     (getBuyItems as jest.Mock)
       .mockResolvedValueOnce([
         {
           ingredientId: 3,
-          ingredientName: "Tomate",
+          name: "Tomate",
           unit: "g",
-          quantity: 200,
-          checked: false,
-          zoneId: 1,
           zoneName: "Légumes",
+          zoneId: 1,
+          total: 200,
+          checked: false,
+          groceryIngredientId: null,
         },
         {
           ingredientId: 5,
-          ingredientName: "Sel",
+          name: "Sel",
           unit: "g",
-          quantity: 10,
-          checked: true,
-          zoneId: 2,
           zoneName: "Épices",
+          zoneId: 2,
+          total: 10,
+          checked: true,
+          groceryIngredientId: 9,
         },
       ])
       .mockResolvedValueOnce([
         {
           ingredientId: 3,
-          ingredientName: "Tomate",
+          name: "Tomate",
           unit: "g",
-          quantity: 200,
-          checked: true,
-          zoneId: 1,
           zoneName: "Légumes",
+          zoneId: 1,
+          total: 200,
+          checked: true,
+          groceryIngredientId: null,
         },
         {
           ingredientId: 5,
-          ingredientName: "Sel",
+          name: "Sel",
           unit: "g",
-          quantity: 10,
-          checked: true,
-          zoneId: 2,
           zoneName: "Épices",
+          zoneId: 2,
+          total: 10,
+          checked: true,
+          groceryIngredientId: 9,
         },
       ]);
     (upsertGroceryIngredient as jest.Mock).mockResolvedValue(null);
@@ -255,7 +253,7 @@ describe("useBuying", () => {
   });
 
   it("toggleCheck upsert avec checked=false si l'ingrédient n'existe pas dans buyItemsData", async () => {
-    (getGrocery as jest.Mock).mockResolvedValue({ id: 7 });
+    (getOrCreateGroceryId as jest.Mock).mockResolvedValue(7);
     (getBuyItems as jest.Mock).mockResolvedValue([]);
     (upsertGroceryIngredient as jest.Mock).mockResolvedValue(null);
 
@@ -271,28 +269,30 @@ describe("useBuying", () => {
   });
 
   it("toggleCheck met à jour checked et upsert puis refresh", async () => {
-    (getGrocery as jest.Mock).mockResolvedValue({ id: 7 });
+    (getOrCreateGroceryId as jest.Mock).mockResolvedValue(7);
     (getBuyItems as jest.Mock)
       .mockResolvedValueOnce([
         {
           ingredientId: 3,
-          ingredientName: "Tomate",
+          name: "Tomate",
           unit: "g",
-          quantity: 200,
-          checked: false,
-          zoneId: 1,
           zoneName: "Légumes",
+          zoneId: 1,
+          total: 200,
+          checked: false,
+          groceryIngredientId: null,
         },
       ])
       .mockResolvedValueOnce([
         {
           ingredientId: 3,
-          ingredientName: "Tomate",
+          name: "Tomate",
           unit: "g",
-          quantity: 200,
-          checked: true,
-          zoneId: 1,
           zoneName: "Légumes",
+          zoneId: 1,
+          total: 200,
+          checked: true,
+          groceryIngredientId: null,
         },
       ]);
     (upsertGroceryIngredient as jest.Mock).mockResolvedValue(null);
@@ -311,16 +311,17 @@ describe("useBuying", () => {
   });
 
   it("toggleCheck affiche une erreur si l'update échoue", async () => {
-    (getGrocery as jest.Mock).mockResolvedValue({ id: 7 });
+    (getOrCreateGroceryId as jest.Mock).mockResolvedValue(7);
     (getBuyItems as jest.Mock).mockResolvedValue([
       {
         ingredientId: 3,
-        ingredientName: "Tomate",
+        name: "Tomate",
         unit: "g",
-        quantity: 200,
-        checked: false,
-        zoneId: 1,
         zoneName: "Légumes",
+        zoneId: 1,
+        total: 200,
+        checked: false,
+        groceryIngredientId: null,
       },
     ]);
     (upsertGroceryIngredient as jest.Mock).mockRejectedValue(new Error("db down"));

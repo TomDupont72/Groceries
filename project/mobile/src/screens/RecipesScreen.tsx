@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, ScrollView } from "react-native";
+import { View, Text, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   useTheme,
@@ -14,6 +14,7 @@ import {
   Badge,
   Loading,
 } from "../theme/index";
+import { styles } from "../theme/theme";
 import { useRecipes } from "../hooks/useRecipes";
 
 export default function RecipesScreen() {
@@ -125,34 +126,3 @@ export default function RecipesScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    padding: 18,
-  },
-  section: {
-    flexDirection: "column",
-    gap: 18,
-  },
-  rowBetween: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 10,
-  },
-  center: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  errorRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 10,
-  },
-  errorText: {
-    flex: 1,
-    flexWrap: "wrap",
-  },
-});
