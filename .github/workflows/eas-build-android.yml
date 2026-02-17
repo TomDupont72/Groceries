@@ -63,13 +63,15 @@ jobs:
       - name: Verify EAS env vars are available (preview)
         working-directory: project/mobile
         run: |
-          eas env:pull --environment preview --non-interactive --format dotenv --path .env.preview
+          # Pull des variables dans un fichier .env (format par défaut)
+          eas env:pull --environment preview --non-interactive --path .env.preview
 
           node - <<'NODE'
           const fs = require('fs');
 
           const content = fs.readFileSync('.env.preview', 'utf8');
           const get = (k) => {
+            // match KEY=... en début de ligne
             const m = content.match(new RegExp(`^${k}=(.*)$`, 'm'));
             return m ? m[1] : '';
           };
@@ -90,7 +92,6 @@ jobs:
             console.log('✅ Required env vars found in EAS preview environment.');
           }
           NODE
-
       # Build APK en LOCAL via EAS :
       # - récupère les credentials Android (keystore) sur Expo
       # - charge les env vars du profile "preview"
