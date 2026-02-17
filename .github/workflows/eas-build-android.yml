@@ -59,45 +59,64 @@ jobs:
           echo "app_version=$APP_VERSION" >> $GITHUB_OUTPUT
           echo "android_version_code=$ANDROID_VERSION_CODE" >> $GITHUB_OUTPUT
 
-      # ✅ Vérifie que les variables EAS "preview" existent (sans afficher les valeurs)
-      - name: Verify EAS env vars are available (preview)
+      # ✅ Vérifie qu'on a bien les 2 variables (Expo OU GitHub) avant de build
+      - name: Verify env vars for local build (Expo + GitHub fallback)
         working-directory: project/mobile
+        env:
+          GH_EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+          GH_EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
         run: |
-          # Pull des variables dans un fichier .env (format par défaut)
-          eas env:pull --environment preview --non-interactive --path .env.preview
+          # On tente de pull depuis Expo (même si certaines variables sont server-only)
+          eas env:pull --environment preview --non-interactive --path .env.preview || true
 
           node - <<'NODE'
           const fs = require('fs');
 
-          const content = fs.readFileSync('.env.preview', 'utf8');
+          let content = '';
+          try { content = fs.readFileSync('.env.preview','utf8'); } catch {}
+
           const get = (k) => {
-            // match KEY=... en début de ligne
             const m = content.match(new RegExp(`^${k}=(.*)$`, 'm'));
             return m ? m[1] : '';
           };
 
-          const url = get('EXPO_PUBLIC_SUPABASE_URL');
-          const key = get('EXPO_PUBLIC_SUPABASE_ANON_KEY');
+          const urlFromEas = get('EXPO_PUBLIC_SUPABASE_URL');
+          const keyFromEas = get('EXPO_PUBLIC_SUPABASE_ANON_KEY');
 
-          const okUrl = !!url;
-          const okKey = !!key;
+          const urlFromGh = process.env.GH_EXPO_PUBLIC_SUPABASE_URL || '';
+          const keyFromGh = process.env.GH_EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
 
-          console.log('EXPO_PUBLIC_SUPABASE_URL present:', okUrl, 'length:', url.length);
-          console.log('EXPO_PUBLIC_SUPABASE_ANON_KEY present:', okKey, 'length:', key.length);
+          // priorité GitHub (fallback/override)
+          const finalUrl = urlFromGh || urlFromEas;
+          const finalKey = keyFromGh || keyFromEas;
 
-          if (!okUrl || !okKey) {
-            console.error('❌ Missing required env vars in EAS preview environment.');
+          console.log('URL from GitHub secret present:', !!urlFromGh, 'length:', urlFromGh.length);
+          console.log('URL from EAS env:pull present:', !!urlFromEas, 'length:', urlFromEas.length);
+          console.log('ANON key from GitHub secret present:', !!keyFromGh, 'length:', keyFromGh.length);
+          console.log('ANON key from EAS env:pull present:', !!keyFromEas, 'length:', keyFromEas.length);
+
+          if (!finalUrl) {
+            console.error('❌ Missing EXPO_PUBLIC_SUPABASE_URL (neither GitHub secrets nor EAS env).');
             process.exit(1);
-          } else {
-            console.log('✅ Required env vars found in EAS preview environment.');
           }
+          if (!finalKey) {
+            console.error('❌ Missing EXPO_PUBLIC_SUPABASE_ANON_KEY (neither GitHub secrets nor EAS env).');
+            process.exit(1);
+          }
+
+          console.log('✅ Env OK for local build.');
           NODE
+
       # Build APK en LOCAL via EAS :
       # - récupère les credentials Android (keystore) sur Expo
       # - charge les env vars du profile "preview"
+      # - et on override/complète avec les secrets GitHub (pour le local)
       - name: EAS build Android (preview) - LOCAL
         id: eas_local
         working-directory: project/mobile
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
         run: |
           mkdir -p dist
           eas build -p android --profile preview --local --non-interactive --output dist/app-preview.apk
