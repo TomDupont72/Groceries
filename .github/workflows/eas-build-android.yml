@@ -52,12 +52,48 @@ jobs:
         run: |
           APP_VERSION=$(node -e "const fs=require('fs'); const j=JSON.parse(fs.readFileSync('./app.json','utf8')); console.log(j.expo?.version ?? '')")
           ANDROID_VERSION_CODE=$(node -e "const fs=require('fs'); const j=JSON.parse(fs.readFileSync('./app.json','utf8')); console.log(j.expo?.android?.versionCode ?? '')")
+
+          echo "App version: $APP_VERSION"
+          echo "Android versionCode: $ANDROID_VERSION_CODE"
+
           echo "app_version=$APP_VERSION" >> $GITHUB_OUTPUT
           echo "android_version_code=$ANDROID_VERSION_CODE" >> $GITHUB_OUTPUT
 
+      # ✅ Vérifie que les variables EAS "preview" existent (sans afficher les valeurs)
+      - name: Verify EAS env vars are available (preview)
+        working-directory: project/mobile
+        run: |
+          eas env:pull --environment preview --non-interactive --format dotenv --path .env.preview
+
+          node - <<'NODE'
+          const fs = require('fs');
+
+          const content = fs.readFileSync('.env.preview', 'utf8');
+          const get = (k) => {
+            const m = content.match(new RegExp(`^${k}=(.*)$`, 'm'));
+            return m ? m[1] : '';
+          };
+
+          const url = get('EXPO_PUBLIC_SUPABASE_URL');
+          const key = get('EXPO_PUBLIC_SUPABASE_ANON_KEY');
+
+          const okUrl = !!url;
+          const okKey = !!key;
+
+          console.log('EXPO_PUBLIC_SUPABASE_URL present:', okUrl, 'length:', url.length);
+          console.log('EXPO_PUBLIC_SUPABASE_ANON_KEY present:', okKey, 'length:', key.length);
+
+          if (!okUrl || !okKey) {
+            console.error('❌ Missing required env vars in EAS preview environment.');
+            process.exit(1);
+          } else {
+            console.log('✅ Required env vars found in EAS preview environment.');
+          }
+          NODE
+
       # Build APK en LOCAL via EAS :
       # - récupère les credentials Android (keystore) sur Expo
-      # - charge les env vars du profile (preview)
+      # - charge les env vars du profile "preview"
       - name: EAS build Android (preview) - LOCAL
         id: eas_local
         working-directory: project/mobile
@@ -93,19 +129,36 @@ jobs:
 
           const url = process.env.SUPABASE_URL;
           const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-          if (!url || !key) process.exit(1);
+
+          if (!url || !key) {
+            console.error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
+            process.exit(1);
+          }
+
+          const buildUrl = process.env.BUILD_URL;
+          if (!buildUrl) {
+            console.error("Missing BUILD_URL (Firebase upload step didn't output TESTING_URI?)");
+            process.exit(1);
+          }
 
           const supabase = createClient(url, key, { auth: { persistSession: false } });
 
           const rows = [
-            { name: "link", value: process.env.BUILD_URL },
+            { name: "link", value: buildUrl },
             { name: "version", value: process.env.APP_VERSION || "" },
             { name: "androidVersion", value: String(process.env.ANDROID_VERSION_CODE || "") },
           ];
 
           (async () => {
-            const { error } = await supabase.from("AppConfig").upsert(rows, { onConflict: "name" });
-            if (error) { console.error(error); process.exit(1); }
+            const { error } = await supabase
+              .from("AppConfig")
+              .upsert(rows, { onConflict: "name" });
+
+            if (error) {
+              console.error("Supabase upsert failed:", error);
+              process.exit(1);
+            }
+
             console.log("✅ Published to AppConfig:", rows);
           })();
           NODE
@@ -113,5 +166,6 @@ jobs:
       - name: Summary
         run: |
           echo "✅ Firebase TESTING_URL: ${{ steps.firebase_upload.outputs.TESTING_URI }}"
+          echo "✅ Firebase console URL: ${{ steps.firebase_upload.outputs.FIREBASE_CONSOLE_URI }}"
           echo "✅ App version: ${{ steps.app_version.outputs.app_version }}"
           echo "✅ versionCode: ${{ steps.app_version.outputs.android_version_code }}"
