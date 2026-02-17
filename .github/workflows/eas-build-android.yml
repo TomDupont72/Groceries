@@ -1,4 +1,4 @@
-name: Android Preview (EAS local) + Firebase App Distribution + publish URL
+name: Android Preview (EAS local) + Firebase App Distribution + publish version
 
 on:
   push:
@@ -12,7 +12,6 @@ concurrency:
 jobs:
   android-preview:
     runs-on: ubuntu-latest
-
     permissions:
       contents: read
 
@@ -59,14 +58,12 @@ jobs:
           echo "app_version=$APP_VERSION" >> $GITHUB_OUTPUT
           echo "android_version_code=$ANDROID_VERSION_CODE" >> $GITHUB_OUTPUT
 
-      # ✅ Vérifie qu'on a bien les 2 variables (Expo OU GitHub) avant de build
       - name: Verify env vars for local build (Expo + GitHub fallback)
         working-directory: project/mobile
         env:
           GH_EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
           GH_EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
         run: |
-          # On tente de pull depuis Expo (même si certaines variables sont server-only)
           eas env:pull --environment preview --non-interactive --path .env.preview || true
 
           node - <<'NODE'
@@ -86,7 +83,6 @@ jobs:
           const urlFromGh = process.env.GH_EXPO_PUBLIC_SUPABASE_URL || '';
           const keyFromGh = process.env.GH_EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
 
-          // priorité GitHub (fallback/override)
           const finalUrl = urlFromGh || urlFromEas;
           const finalKey = keyFromGh || keyFromEas;
 
@@ -95,22 +91,12 @@ jobs:
           console.log('ANON key from GitHub secret present:', !!keyFromGh, 'length:', keyFromGh.length);
           console.log('ANON key from EAS env:pull present:', !!keyFromEas, 'length:', keyFromEas.length);
 
-          if (!finalUrl) {
-            console.error('❌ Missing EXPO_PUBLIC_SUPABASE_URL (neither GitHub secrets nor EAS env).');
-            process.exit(1);
-          }
-          if (!finalKey) {
-            console.error('❌ Missing EXPO_PUBLIC_SUPABASE_ANON_KEY (neither GitHub secrets nor EAS env).');
-            process.exit(1);
-          }
+          if (!finalUrl) process.exit(1);
+          if (!finalKey) process.exit(1);
 
           console.log('✅ Env OK for local build.');
           NODE
 
-      # Build APK en LOCAL via EAS :
-      # - récupère les credentials Android (keystore) sur Expo
-      # - charge les env vars du profile "preview"
-      # - et on override/complète avec les secrets GitHub (pour le local)
       - name: EAS build Android (preview) - LOCAL
         id: eas_local
         working-directory: project/mobile
@@ -128,19 +114,19 @@ jobs:
         with:
           appId: ${{ secrets.FIREBASE_APP_ID }}
           serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
-          groups: ${{ secrets.FIREBASE_GROUPS }} # ex: internal
+          groups: ${{ secrets.FIREBASE_GROUPS }}
           file: ${{ env.APP_DIR }}/${{ steps.eas_local.outputs.apk_path }}
           releaseNotes: |
             Build #${{ github.run_number }}
             Commit: ${{ github.sha }}
             Branch: ${{ github.ref_name }}
 
-      - name: Publish TESTING_URL to Supabase (AppConfig)
+      # ✅ Push seulement version + androidVersion en base
+      - name: Publish version to Supabase (AppConfig)
         working-directory: project/mobile
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          BUILD_URL: ${{ steps.firebase_upload.outputs.TESTING_URI }}
           APP_VERSION: ${{ steps.app_version.outputs.app_version }}
           ANDROID_VERSION_CODE: ${{ steps.app_version.outputs.android_version_code }}
         run: |
@@ -155,16 +141,9 @@ jobs:
             process.exit(1);
           }
 
-          const buildUrl = process.env.BUILD_URL;
-          if (!buildUrl) {
-            console.error("Missing BUILD_URL (Firebase upload step didn't output TESTING_URI?)");
-            process.exit(1);
-          }
-
           const supabase = createClient(url, key, { auth: { persistSession: false } });
 
           const rows = [
-            { name: "link", value: buildUrl },
             { name: "version", value: process.env.APP_VERSION || "" },
             { name: "androidVersion", value: String(process.env.ANDROID_VERSION_CODE || "") },
           ];
@@ -185,7 +164,7 @@ jobs:
 
       - name: Summary
         run: |
-          echo "✅ Firebase TESTING_URL: ${{ steps.firebase_upload.outputs.TESTING_URI }}"
+          echo "✅ Last uploaded build testing URL (per-release): ${{ steps.firebase_upload.outputs.TESTING_URI }}"
           echo "✅ Firebase console URL: ${{ steps.firebase_upload.outputs.FIREBASE_CONSOLE_URI }}"
           echo "✅ App version: ${{ steps.app_version.outputs.app_version }}"
           echo "✅ versionCode: ${{ steps.app_version.outputs.android_version_code }}"
