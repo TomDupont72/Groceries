@@ -1,4 +1,4 @@
-name: Local Android Build + Firebase App Distribution + publish URL
+name: Android Preview (EAS local) + Firebase App Distribution + publish URL
 
 on:
   push:
@@ -40,78 +40,45 @@ jobs:
         working-directory: project/mobile
         run: npm ci
 
-      # Cache Gradle (accélère)
-      - name: Cache Gradle
-        uses: actions/cache@v4
+      - name: Setup Expo + EAS
+        uses: expo/expo-github-action@v8
         with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('project/mobile/android/gradle/wrapper/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
+          token: ${{ secrets.EXPO_TOKEN }}
+          eas-version: latest
 
-      # 1) Lire la version dans app.json
       - name: Read app version from app.json
         id: app_version
         working-directory: project/mobile
         run: |
           APP_VERSION=$(node -e "const fs=require('fs'); const j=JSON.parse(fs.readFileSync('./app.json','utf8')); console.log(j.expo?.version ?? '')")
           ANDROID_VERSION_CODE=$(node -e "const fs=require('fs'); const j=JSON.parse(fs.readFileSync('./app.json','utf8')); console.log(j.expo?.android?.versionCode ?? '')")
-
-          echo "App version: $APP_VERSION"
-          echo "Android versionCode: $ANDROID_VERSION_CODE"
-
           echo "app_version=$APP_VERSION" >> $GITHUB_OUTPUT
           echo "android_version_code=$ANDROID_VERSION_CODE" >> $GITHUB_OUTPUT
 
-      # 2) Prebuild + build APK release
-      - name: Prebuild (generate android)
-        working-directory: project/mobile
-        run: |
-          npx expo prebuild --platform android --non-interactive
-
-      - name: Build APK (Gradle)
-        working-directory: project/mobile/android
-        run: |
-          chmod +x ./gradlew
-          ./gradlew assembleRelease
-
-      # 3) Collecter l'APK
-      - name: Collect APK
-        id: collect_apk
+      # Build APK en LOCAL via EAS :
+      # - récupère les credentials Android (keystore) sur Expo
+      # - charge les env vars du profile (preview)
+      - name: EAS build Android (preview) - LOCAL
+        id: eas_local
         working-directory: project/mobile
         run: |
           mkdir -p dist
-          APK_PATH="android/app/build/outputs/apk/release/app-release.apk"
+          eas build -p android --profile preview --local --non-interactive --output dist/app-preview.apk
+          echo "apk_path=dist/app-preview.apk" >> $GITHUB_OUTPUT
 
-          if [ ! -f "$APK_PATH" ]; then
-            echo "❌ APK not found at $APK_PATH"
-            ls -R android/app/build/outputs/apk || true
-            exit 1
-          fi
-
-          APK_NAME="app-preview-${{ github.run_number }}.apk"
-          cp "$APK_PATH" "dist/$APK_NAME"
-
-          echo "apk_name=$APK_NAME" >> $GITHUB_OUTPUT
-          echo "apk_path=dist/$APK_NAME" >> $GITHUB_OUTPUT
-
-      # 4) Upload Firebase App Distribution
       - name: Upload to Firebase App Distribution
         id: firebase_upload
         uses: wzieba/Firebase-Distribution-Github-Action@v1
         with:
           appId: ${{ secrets.FIREBASE_APP_ID }}
           serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
-          groups: ${{ secrets.FIREBASE_GROUPS }} # ex: "qa,internal" (ou mets en dur)
-          file: ${{ env.APP_DIR }}/${{ steps.collect_apk.outputs.apk_path }}
+          groups: ${{ secrets.FIREBASE_GROUPS }} # ex: internal
+          file: ${{ env.APP_DIR }}/${{ steps.eas_local.outputs.apk_path }}
           releaseNotes: |
             Build #${{ github.run_number }}
             Commit: ${{ github.sha }}
             Branch: ${{ github.ref_name }}
 
-      # 5) Publier en base Supabase (AppConfig)
       - name: Publish TESTING_URL to Supabase (AppConfig)
         working-directory: project/mobile
         env:
@@ -126,39 +93,19 @@ jobs:
 
           const url = process.env.SUPABASE_URL;
           const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-          if (!url || !key) {
-            console.error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
-            process.exit(1);
-          }
+          if (!url || !key) process.exit(1);
 
           const supabase = createClient(url, key, { auth: { persistSession: false } });
 
-          const buildUrl = process.env.BUILD_URL;
-          const appVersion = process.env.APP_VERSION || "";
-          const androidVersionCode = process.env.ANDROID_VERSION_CODE || "";
-
-          if (!buildUrl) {
-            console.error("Missing BUILD_URL (Firebase upload step didn't output TESTING_URI?)");
-            process.exit(1);
-          }
-
           const rows = [
-            { name: "link", value: buildUrl },
-            { name: "version", value: appVersion },
-            { name: "androidVersion", value: String(androidVersionCode) },
+            { name: "link", value: process.env.BUILD_URL },
+            { name: "version", value: process.env.APP_VERSION || "" },
+            { name: "androidVersion", value: String(process.env.ANDROID_VERSION_CODE || "") },
           ];
 
           (async () => {
-            const { error } = await supabase
-              .from("AppConfig")
-              .upsert(rows, { onConflict: "name" });
-
-            if (error) {
-              console.error("Supabase upsert failed:", error);
-              process.exit(1);
-            }
-
+            const { error } = await supabase.from("AppConfig").upsert(rows, { onConflict: "name" });
+            if (error) { console.error(error); process.exit(1); }
             console.log("✅ Published to AppConfig:", rows);
           })();
           NODE
@@ -166,6 +113,5 @@ jobs:
       - name: Summary
         run: |
           echo "✅ Firebase TESTING_URL: ${{ steps.firebase_upload.outputs.TESTING_URI }}"
-          echo "✅ Firebase console URL: ${{ steps.firebase_upload.outputs.FIREBASE_CONSOLE_URI }}"
           echo "✅ App version: ${{ steps.app_version.outputs.app_version }}"
           echo "✅ versionCode: ${{ steps.app_version.outputs.android_version_code }}"
