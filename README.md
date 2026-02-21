@@ -17,6 +17,7 @@ Application Android de gestion de courses / ingrédients / recettes.
 - Un projet **Supabase** (si tu veux utiliser ta propre base)
 
 Outils recommandés :
+
 - VS Code
 - Android Studio (émulateur Android)
 
@@ -99,6 +100,7 @@ npx expo start
 ```
 
 Puis :
+
 - `a` : lancer sur Android (émulateur)
 - ou scanner le QR code avec Expo Go
 
@@ -169,11 +171,13 @@ npx eas build -p android --profile preview
 Le repo contient 2 workflows :
 
 ### 1) CI (sur Pull Request)
+
 - ESLint
 - Snyk (vulnérabilités dépendances)
 - CodeQL (analyse sécurité du code)
 
 ### 2) Build Android (sur merge main)
+
 - Build APK avec EAS
 - Récupère URL du build
 - Met à jour Supabase `AppConfig`
@@ -214,16 +218,17 @@ ADD CONSTRAINT appconfig_name_unique UNIQUE ("name");
 
 ## Workflow de contribution
 
-1) Créer une branche
-2) Ouvrir une Pull Request
-3) La CI vérifie le code
-4) Merge → build automatique + lien APK en base
+1. Créer une branche
+2. Ouvrir une Pull Request
+3. La CI vérifie le code
+4. Merge → build automatique + lien APK en base
 
 ---
 
 ## Dépannage
 
 ### Invalid project root
+
 Toujours être dans `project/mobile`
 
 ### Warning CRLF / LF (Windows)
@@ -237,4 +242,5 @@ git config --global core.autocrlf input
 ---
 
 ## Licence
+
 TBD

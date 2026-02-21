@@ -1,13 +1,13 @@
-import { useEffect, useState, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   getAppConfig,
   getCurrentUser,
   getUser,
-  supabaseSignIn,
-  supabaseSignUp,
   insertUser,
   supabaseGetSession,
+  supabaseSignIn,
   supabaseSignOut,
+  supabaseSignUp,
 } from "../services/HomeService";
 
 type AuthState = "loggedOut" | "logIn" | "signUp" | "loggedIn";
@@ -22,7 +22,7 @@ export function useHomeScreen() {
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [authState, setAuthState] = useState<AuthState>("loggedOut");
-  const version = "1.5.2";
+  const version = "1.5.3";
 
   const loadAll = useCallback(async () => {
     setErrorMsg(null);

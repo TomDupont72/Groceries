@@ -109,6 +109,7 @@ jobs:
             -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
             -Dsonar.coverage.exclusions=**/*.test.ts,**/*.test.tsx,**/src/screens/**,**/src/theme/**,**/src/navigation/**,**/src/api/**
             -Dsonar.cpd.exclusions=**/*.test.ts,**/*.test.tsx
+            -Dsonar.exclusions=coverage/**,dist/**,build/**
 
   snyk:
     name: Snyk (Dependencies)
@@ -149,6 +150,7 @@ jobs:
       - uses: github/codeql-action/init@v3
         with:
           languages: javascript
+          config-file: .github/codeql/codeql-config.yml
 
       - uses: github/codeql-action/analyze@v3
 
