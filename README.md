@@ -1,240 +1,50 @@
-# Groceries (Expo / React Native / Supabase)
+# Welcome to your Expo app 👋
 
-Application Android de gestion de courses / ingrédients / recettes.
+This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
 
-- **Frontend** : Expo + React Native + TypeScript
-- **Navigation** : React Navigation (Stack)
-- **Backend** : Supabase (Auth + Postgres + RLS), utilisé directement depuis l’app
-- **CI** : Lint + Snyk + CodeQL + Build Android EAS + publication du lien APK en base
+## Get started
 
----
+1. Install dependencies
 
-## Prérequis
+   ```bash
+   npm install
+   ```
 
-- **Node.js 20+**
-- **Git**
-- Un compte **Expo** (si tu veux builder avec EAS)
-- Un projet **Supabase** (si tu veux utiliser ta propre base)
+2. Start the app
 
-Outils recommandés :
-- VS Code
-- Android Studio (émulateur Android)
+   ```bash
+   npx expo start
+   ```
 
----
+In the output, you'll find options to open the app in a
 
-## Structure du projet
+- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
+- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
+- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
+- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
 
-Le code mobile est dans :
+You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
 
-```
-project/mobile/
-  App.tsx
-  src/
-    api/
-      supabase.ts
-    screens/
-    theme/
-  app.json
-  eas.json
-  package.json
-```
+## Get a fresh project
 
----
-
-## Installation (setup local)
-
-### 1) Cloner le repo
+When you're ready, run:
 
 ```bash
-git clone <repo-url>
-cd Groceries
+npm run reset-project
 ```
 
-### 2) Installer les dépendances
+This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
 
-Toujours dans le dossier mobile :
+## Learn more
 
-```bash
-cd project/mobile
-npm ci
-```
+To learn more about developing your project with Expo, look at the following resources:
 
-> `npm ci` est recommandé (reproductible).  
-> Si tu n’as pas de `package-lock.json`, utilise `npm install`.
+- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
+- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
 
----
+## Join the community
 
-## Configuration Supabase (env)
+Join our community of developers creating universal apps.
 
-Le projet utilise des variables Expo publiques pour se connecter à Supabase.
-
-### 1) Créer un fichier `.env` (local uniquement)
-
-Dans `project/mobile/`, crée un fichier `.env` :
-
-```env
-EXPO_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
-EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJ...
-```
-
-Ces variables sont publiques (clé anon) et peuvent être embarquées dans l’app.  
-Ne jamais mettre une clé `service_role` dans l’app mobile.
-
-### 2) Vérifier que `.env` est ignoré par Git
-
-Dans `.gitignore` :
-
-```
-.env
-```
-
----
-
-## Lancer l’app (dev)
-
-Dans `project/mobile` :
-
-```bash
-npx expo start
-```
-
-Puis :
-- `a` : lancer sur Android (émulateur)
-- ou scanner le QR code avec Expo Go
-
----
-
-## Linter (ESLint + Prettier)
-
-### Vérifier le code
-
-```bash
-npm run lint
-```
-
-### Corriger automatiquement
-
-```bash
-npm run lint:fix
-```
-
-ou
-
-```bash
-npx eslint . --fix
-```
-
----
-
-## Formatage (Prettier)
-
-```bash
-npm run format
-```
-
-ou
-
-```bash
-npx prettier . --write
-```
-
----
-
-## Tests
-
-```bash
-npm test
-```
-
----
-
-## Build Android (EAS)
-
-### Login Expo
-
-```bash
-npx expo login
-```
-
-### Build APK
-
-```bash
-npx eas build -p android --profile preview
-```
-
----
-
-## CI / Sécurité (GitHub Actions)
-
-Le repo contient 2 workflows :
-
-### 1) CI (sur Pull Request)
-- ESLint
-- Snyk (vulnérabilités dépendances)
-- CodeQL (analyse sécurité du code)
-
-### 2) Build Android (sur merge main)
-- Build APK avec EAS
-- Récupère URL du build
-- Met à jour Supabase `AppConfig`
-
----
-
-## Secrets GitHub requis
-
-Repo → Settings → Secrets → Actions :
-
-```
-EXPO_TOKEN
-SNYK_TOKEN
-SUPABASE_URL
-SUPABASE_SERVICE_ROLE_KEY
-```
-
-La clé `service_role` est utilisée uniquement côté CI, jamais dans l’app.
-
----
-
-## Supabase : table AppConfig
-
-La CI stocke les infos de build :
-
-- android_apk_url_preview
-- android_app_version
-- android_version_code
-
-Important : `name` doit être UNIQUE :
-
-```sql
-ALTER TABLE public."AppConfig"
-ADD CONSTRAINT appconfig_name_unique UNIQUE ("name");
-```
-
----
-
-## Workflow de contribution
-
-1) Créer une branche
-2) Ouvrir une Pull Request
-3) La CI vérifie le code
-4) Merge → build automatique + lien APK en base
-
----
-
-## Dépannage
-
-### Invalid project root
-Toujours être dans `project/mobile`
-
-### Warning CRLF / LF (Windows)
-
-Optionnel :
-
-```bash
-git config --global core.autocrlf input
-```
-
----
-
-## Licence
-TBD
+- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
+- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
