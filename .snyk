@@ -1,0 +1,6 @@
+version: v1
+ignore:
+  SNYK-JS-MINIMATCH-15309438:
+    - '*':
+        reason: "Expo CLI dev dependency, not shipped in mobile runtime"
+        expires: 2027-01-01T00:00:00.000Z
